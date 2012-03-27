@@ -1,0 +1,58 @@
+options:
+    vcs:
+        type: string
+        default: "git"
+        description: The vcs software to use.
+    repos_url:
+        type: string
+        default: ""
+        description: The vcs url to checkout.
+    extra_deb_pkgs:
+        type: string
+        default: ""
+        description: Extra Debian packages to install
+    worker_class:
+        type: string
+        default: "sync"
+        description: "Gunicorn workers type"
+    requirements:
+        type: string
+        default: "./requirements.txt"
+        description: The relative path to the requirement file.
+    site_domain:
+        type: string
+        default: "example.com"
+        description: The domain name of the web site.
+    site_username:
+        type: string
+        default: "admin"
+        description: The web site administrator username.
+    site_password:
+        type: string
+        default: "changeme"
+        description: The web site administrator password.
+    site_admin_email:
+        type: string
+        default: ""
+    site_secret_key:
+        type: string
+        default: ''
+    auth_url:
+        type: string
+        default: ""
+    api_key:
+        type: string
+        default: ""
+    container_name:
+        type: string
+        default: ''
+    swift_version:
+        type: string
+        default: 'v1'
+    swift_prefix:
+        type: string
+        default: 'AUTH_'
+    swift_username:
+        type: string
+        default: ''
+
