@@ -12,8 +12,6 @@ juju-log "django: Repos with $VCS and url: $REPOS_URL"
 
 apt-get install -y python-django gunicorn python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client $EXTRA_DEB_PKGS
 
-mkdir -p /srv/${UNIT_NAME}/run
-mkdir -p /srv/${UNIT_NAME}/logs
 
 if [ ! -d "/srv/${UNIT_NAME}" ]; then
 
@@ -24,7 +22,7 @@ if [ ! -d "/srv/${UNIT_NAME}" ]; then
 	git)
 	    git clone ${REPOS_URL} /srv/${UNIT_NAME}
 	    ;;
-bzr)
+    bzr)
 	    bzr branch ${REPOS_URL} /srv/${UNIT_NAME}
 	    ;;
 	svn)
@@ -33,8 +31,8 @@ bzr)
 	esac
 fi
 
-umask 0022
-rm /srv/${UNIT_NAME}/src -rf
+mkdir -p /srv/${UNIT_NAME}/run
+mkdir -p /srv/${UNIT_NAME}/logs
 
 cd /srv/${UNIT_NAME}/
 pip install -r ${REQUIREMENTS}
