@@ -130,5 +130,3 @@ python manage.py collectstatic -v 0 --noinput || true
 chown www-data /srv/${UNIT_NAME}/ -R
 chmod g+rw /srv/${UNIT_NAME}/ -R
 
-/etc/init.d/gunicorn start
-/etc/init.d/gunicorn reload

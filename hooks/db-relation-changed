@@ -1,6 +1,6 @@
 #!/bin/bash
 
-relation-set private-address=`ifconfig  | grep 'inet addr:'| grep -v '127.0.0.1' | cut -d: -f2 | awk '{ print $1}'|head -n 1`
+relation-set private-address=`relation-get private-address`
 
 base=`dirname $0`
 
@@ -46,5 +46,3 @@ chmod g+rw ${UNIT_DIR} -R
 
 exec $base/config-changed
 
-/etc/init.d/gunicorn start
-/etc/init.d/gunicorn reload

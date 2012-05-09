@@ -1,0 +1,6 @@
+#!/bin/bash
+
+UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
+
+relation-set working_dir /srv/${UNIT_NAME}/
+relation-set wsgi_file wsgi

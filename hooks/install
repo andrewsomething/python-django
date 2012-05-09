@@ -10,7 +10,7 @@ REQUIREMENTS=$(config-get requirements)
 
 juju-log "django: Repos with $VCS and url: $REPOS_URL"
 
-apt-get install -y python-django gunicorn python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client python-eventlet python-gevent $EXTRA_DEB_PKGS
+apt-get install -y python-django python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client $EXTRA_DEB_PKGS
 
 
 if [ ! -d "/srv/${UNIT_NAME}" ]; then
