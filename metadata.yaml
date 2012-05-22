@@ -1,4 +1,4 @@
-name: django
+name: python-django
 summary: High-level Python web development framework
 description: |
   Django is a high-level web application framework that loosely follows
