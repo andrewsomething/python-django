@@ -1,5 +1,6 @@
 name: python-django
 summary: High-level Python web development framework
+maintainer: Patrick Hetu <patrick.hetu@gmail.com>
 description: |
   Django is a high-level web application framework that loosely follows
   the model-view-controller design pattern.  Python's equivalent to Ruby
