@@ -123,8 +123,6 @@ except ImportError:
 
 EOF
 
-cd /srv/${UNIT_NAME}/
-pip install -r ${REQUIREMENTS} --upgrade
 python manage.py collectstatic -v 0 --noinput || true
 
 chown www-data /srv/${UNIT_NAME}/ -R
