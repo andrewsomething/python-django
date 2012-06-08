@@ -6,8 +6,6 @@ VCS=$(config-get vcs)
 REPOS_URL=$(config-get repos_url)
 REQUIREMENTS=$(config-get requirements)
 
-
-
 SITE_USERNAME=$(config-get site_username)
 SITE_DOMAIN=$(config-get site_domain)
 SITE_PASSWORD=$(config-get site_password)
@@ -15,7 +13,8 @@ SITE_ADMIN_EMAIL=$(config-get site_admin_email)
 SITE_SECRET_KEY=$(config-get site_secret_key)
 AUTH_URL=$(config-get auth_url)
 API_KEY=$(config-get api_key)
-CONTAINER_NAME=$(config-get container_name)
+
+SWIFT_CONTAINER_NAME=$(config-get swift_container_name)
 SWIFT_USERNAME=$(config-get swift_username)
 SWIFT_VERSION=$(config-get swift_version)
 SWIFT_PREFIX=$(config-get swift_prefix)
@@ -97,20 +96,20 @@ SEND_BROKEN_LINK_EMAILS = True
 SECRET_KEY = '$SITE_SECRET_KEY'
 
 MEDIA_ROOT = os.path.join(PROJECT_ROOT, "site_media", "media")
-MEDIA_URL = "$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$CONTAINER_NAME/"
+MEDIA_URL = "$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$SWIFT_CONTAINER_NAME/"
 
 STATICFILES_STORAGE = 'cumulus.storage.CloudFilesStorage'
 STATICFILES_ROOT = os.path.join(PROJECT_ROOT, "site_media", "static")
 STATIC_ROOT =  STATICFILES_ROOT
-STATICFILES_URL = "$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$CONTAINER_NAME/./"
+STATICFILES_URL = "$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$SWIFT_CONTAINER_NAME/./"
 STATIC_URL =  STATICFILES_URL
-ADMIN_MEDIA_PREFIX = '$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$CONTAINER_NAME/admin/'
+ADMIN_MEDIA_PREFIX = '$AUTH_URL/$SWIFT_VERSION/$SWIFT_PREFIX$SWIFT_USERNAME/$SWIFT_CONTAINER_NAME/admin/'
 
 DEFAULT_FILE_STORAGE = 'cumulus.storage.CloudFilesStorage'
 CUMULUS = {
     'API_KEY': '$API_KEY',
     'AUTH_URL': '$AUTH_URL',
-    'CONTAINER': '$CONTAINER_NAME',
+    'CONTAINER': '$SWIFT_CONTAINER_NAME',
     'USE_SSL': False,
     'USERNAME': '$SWIFT_USERNAME',
     'USE_SWIFT_BACKEND' : True,

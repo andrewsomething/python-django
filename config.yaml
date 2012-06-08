@@ -11,10 +11,6 @@ options:
         type: string
         default: ""
         description: Extra Debian packages to install
-    worker_class:
-        type: string
-        default: "sync"
-        description: "Gunicorn workers type"
     requirements:
         type: string
         default: "./requirements.txt"
@@ -43,9 +39,10 @@ options:
     api_key:
         type: string
         default: ""
-    container_name:
+    wsgi_worker_class:
         type: string
-        default: ''
+        default: "sync"
+        description: "Gunicorn workers type"
     swift_version:
         type: string
         default: 'v1'
@@ -55,4 +52,6 @@ options:
     swift_username:
         type: string
         default: ''
-
+    swift_container_name:
+        type: string
+        default: ''

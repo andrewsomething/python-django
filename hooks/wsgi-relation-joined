@@ -3,4 +3,8 @@
 UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 
 relation-set working_dir /srv/${UNIT_NAME}/
+
+# The best would be to set all variables that starts with wsgi_
 relation-set wsgi_file wsgi
+relation-set wsgi_worker_class $(config-get wsgi_worker_class)
+
