@@ -7,7 +7,6 @@ EXTRA_DEB_PKGS=$(config-get extra_deb_pkgs)
 REQUIREMENTS=$(config-get requirements)
 
 
-
 juju-log "django: Repos with $VCS and url: $REPOS_URL"
 
 apt-get install -y python-django python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client $EXTRA_DEB_PKGS
@@ -37,43 +36,3 @@ mkdir -p /srv/${UNIT_NAME}/logs
 cd /srv/${UNIT_NAME}/
 pip install -r ${REQUIREMENTS}
 
-
-# find a free port from 80
-# FIXME: but what about closed services?
-
-PORT=8080
-quit=0
-
-while [ "$quit" -ne 1 ]; do
-    netstat -na | grep 'tcp' | grep 'LISTEN' | awk '{print $4}' | cut -d: -f2 | grep $PORT >> /dev/null
-    if [ $? -ne 0 ]
-    then
-        quit=1
-    else
-        PORT=`expr $PORT + 1`
-    fi
-done
-
-cat > /etc/gunicorn.d/${UNIT_NAME}.conf <<EOF
-CONFIG = {
-    'mode': 'wsgi',
-    'environment': {
-        'PYTHONPATH': '/srv/${UNIT_NAME}/',
-    },
-    'working_dir': '/srv/${UNIT_NAME}/',
-    'user': 'www-data',
-    'group': 'www-data',
-    'args': (
-        '--name=${UNIT_NAME}_site',
-        '--worker-class=eventlet',
-        '--bind=0.0.0.0:${PORT}',
-        '--workers=2',
-        '--log-file=/srv/${UNIT_NAME}/logs/gunicorn.log',
-        '--timeout=300',
-        'wsgi',
-    ),
-}
-EOF
-
-
-open-port $PORT/tcp
