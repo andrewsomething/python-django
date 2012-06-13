@@ -30,28 +30,36 @@ options:
     site_admin_email:
         type: string
         default: ""
+        description: The web site administrator email.
     site_secret_key:
         type: string
         default: ''
-    auth_url:
-        type: string
-        default: ""
-    api_key:
-        type: string
-        default: ""
+        description: The web site secret key. Leave empty will generate one.
     wsgi_worker_class:
         type: string
         default: "sync"
-        description: "Gunicorn workers type"
+        description: Gunicorn workers type
+    swift_auth_url:
+        type: string
+        default: ""
+        description: Swift authentification url
+    swift_api_key:
+        type: string
+        default: ""
+        description: Swift authentification key
     swift_version:
         type: string
         default: 'v1'
+        description: Swift version 
     swift_prefix:
         type: string
         default: 'AUTH_'
+        description: Swift username prefix 
     swift_username:
         type: string
         default: ''
+        description: Swift username
     swift_container_name:
         type: string
         default: ''
+        description: Swift container name
