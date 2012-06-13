@@ -1,6 +1,6 @@
 #!/bin/bash
 
-relation-set private-address=`relation-get private-address`
+relation-set private-address=`unit-get private-address`
 
 base=`dirname $0`
 
