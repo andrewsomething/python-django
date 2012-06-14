@@ -127,3 +127,8 @@ python manage.py collectstatic -v 0 --noinput || true
 chown www-data /srv/${UNIT_NAME}/ -R
 chmod g+rw /srv/${UNIT_NAME}/ -R
 
+# Trigger the wsgi server reload
+for relid in `relation-ids wsgi` ; do
+  relation-set -r $relid wsgi_timestamp=`date +%s`
+done
+
