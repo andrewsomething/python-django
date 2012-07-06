@@ -2,7 +2,8 @@ options:
     vcs:
         type: string
         default: "git"
-        description: The vcs software to use.
+        description: |
+          The vcs software to use. Only hg, git, bzr, and svn are currently supported.
     repos_url:
         type: string
         default: ""
@@ -14,31 +15,35 @@ options:
     requirements:
         type: string
         default: "./requirements.txt"
-        description: The relative path to the requirement file.
+        description: |
+          The relative path to the requirement file. Note that the charm
+          won't manually upgrade packages defined in this file.
     site_domain:
         type: string
         default: "example.com"
-        description: The domain name of the web site.
+        description: The domain name of the web site. This variable can't be changed after installation.
     site_username:
         type: string
         default: "admin"
-        description: The web site administrator username.
+        description: The web site administrator username. This variable can't be changed after installation.
     site_password:
         type: string
         default: "changeme"
-        description: The web site administrator password.
+        description: The web site administrator password. This variable can't be changed after installation.
     site_admin_email:
         type: string
         default: ""
-        description: The web site administrator email.
+        description: The web site administrator email. This variable can't be changed after installation.
     site_secret_key:
         type: string
         default: ''
-        description: The web site secret key. Leave empty will generate one.
+        description: |
+          The web site secret key. Leave empty will generate one (Note: you don't
+          want that in a multi-unit architechture).
     wsgi_worker_class:
         type: string
         default: "sync"
-        description: Gunicorn workers type
+        description: Gunicorn workers type. This variable can't be changed after installation.
     swift_auth_url:
         type: string
         default: ""
