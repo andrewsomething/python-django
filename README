@@ -40,3 +40,9 @@ Example deployment
    To find out the public address of gunicorn, look for it in the output of the
    `juju status` command.  
 
+Security
+--------
+
+Note that if your using a *requirement.txt* file the packages will
+be downloaded with *pip*. *Pip* is not doing any cryptographical
+verification of its downloads so this be a security risk.
