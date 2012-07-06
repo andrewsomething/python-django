@@ -16,8 +16,6 @@ description: |
   standalone web server for development and testing *
   Internationalization support * Testing framework and client
 provides:
-  website:
-    interface: http
   wsgi:
     interface: wsgi
     scope: container
