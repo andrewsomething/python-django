@@ -1,7 +1,0 @@
-#!/bin/sh
-
-UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
-PORT=`grep "bind" /etc/gunicorn.d/${UNIT_NAME}.conf | sed -e "s/.*:\(.*\)',/\1/"`
-DOMAIN=`cat /srv/${UNIT_NAME}/initial_data.json | grep domain | python -c "import re,sys;print re.match('\"domain\": \"(.*)\"', sys.stdin.read().strip()).group(1)"`
-
-relation-set port=${PORT} hostname=`hostname -f` domain=${DOMAIN}

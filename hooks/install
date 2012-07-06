@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 VCS=$(config-get vcs)
@@ -34,5 +35,5 @@ mkdir -p /srv/${UNIT_NAME}/run
 mkdir -p /srv/${UNIT_NAME}/logs
 
 cd /srv/${UNIT_NAME}/
-pip install -r ${REQUIREMENTS}
+pip install -r ${REQUIREMENTS} || true
 

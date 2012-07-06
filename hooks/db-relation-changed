@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 relation-set private-address=`unit-get private-address`
 

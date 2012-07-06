@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 
