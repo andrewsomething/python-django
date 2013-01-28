@@ -4,11 +4,28 @@ set -e
 UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 VCS=$(config-get vcs)
 REPOS_URL=$(config-get repos_url)
+REPOS_USERNAME=$(config-get repos_username)
+REPOS_PASSWORD=$(config-get repos_password)
 EXTRA_DEB_PKGS=$(config-get extra_deb_pkgs)
 REQUIREMENTS=$(config-get requirements)
 
 
 juju-log "django: Repos with $VCS and url: $REPOS_URL"
+
+if [ -n "$REPOS_USERNAME" ]; then
+    if [[ "$REPOS_URL" =~ .*://([^/]+)/.* ]]; then
+        REPOS_DOMAIN=${BASH_REMATCH[1]}
+        cat >> ~/.netrc << EOF
+machine ${REPOS_DOMAIN}
+    login ${REPOS_USERNAME}
+    password ${REPOS_PASSWORD}
+
+EOF
+        chmod 600 ~/.netrc
+    else
+        juju-log "Cannot retrieve domain name from URL $REPOS_URL"
+    fi
+fi
 
 apt-get install -y python-django python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client $EXTRA_DEB_PKGS
 

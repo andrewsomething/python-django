@@ -8,6 +8,14 @@ options:
         type: string
         default: ""
         description: The vcs url to checkout.
+    repos_username:
+        type: string
+        default: ""
+        description: The vcs user name.
+    repos_password:
+        type: string
+        default: ""
+        description: The vcs password.
     extra_deb_pkgs:
         type: string
         default: ""
