@@ -5,7 +5,15 @@ UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 
 relation-set working_dir="/srv/${UNIT_NAME}/"
 
-# The best would be to set all variables that starts with wsgi_
-relation-set wsgi_file="wsgi"
-relation-set wsgi_worker_class=$(config-get wsgi_worker_class)
+variables="wsgi_wsgi_file wsgi_workers wsgi_worker_class wsgi_worker_connections wsgi_max_requests wsgi_timeout wsgi_backlog wsgi_keep_alive wsgi_extra wsgi_user wsgi_group wsgi_umask wsgi_log_file wsgi_log_level wsgi_access_logfile wsgi_access_logformat env_extra django_settings python_path port"
+
+declare -A VAR
+for v in $variables;do
+  VAR[$v]=$(config-get $v)
+  if [ ! -z "${VAR[$v]}" ] ; then
+    relation-set "$v=${VAR[$v]}"
+  fi
+done
+
+juju-log "Set relation variables: ${VAR[@]}"
 
