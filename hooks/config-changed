@@ -1,10 +1,12 @@
 #!/bin/bash
 set -e
 
-UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
+#UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
 
-VCS=$(config-get vcs)
-REPOS_URL=$(config-get repos_url)
+#VCS=$(config-get vcs)
+#REPOS_URL=$(config-get repos_url)
+source $(dirname "$0")/common.incl
+
 REQUIREMENTS=$(config-get requirements)
 
 SITE_USERNAME=$(config-get site_username)
@@ -123,7 +125,7 @@ except ImportError:
 
 EOF
 
-python manage.py collectstatic -v 0 --noinput || true
+python ${APP_DIR}/manage.py collectstatic -v 0 --noinput || true
 
 chown www-data /srv/${UNIT_NAME}/ -R
 chmod g+rw /srv/${UNIT_NAME}/ -R

@@ -16,6 +16,12 @@ options:
         type: string
         default: ""
         description: The vcs password.
+    application_path:
+        type: string
+        default: ""
+        description: |
+          The relative path to the root of the Django application tree where the manage.py
+          script is located.
     extra_deb_pkgs:
         type: string
         default: ""

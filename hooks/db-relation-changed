@@ -1,12 +1,14 @@
 #!/bin/bash
 set -e
 
+source $(dirname "$0")/common.incl
+
 relation-set private-address=`unit-get private-address`
 
 base=`dirname $0`
 
-UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
-UNIT_DIR=/srv/${UNIT_NAME}
+#UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
+#UNIT_DIR=/srv/${UNIT_NAME}
 
 DB_USER=$(relation-get user)
 DB_PASSWORD=$(relation-get password)
@@ -22,7 +24,7 @@ if [ -z "$DB_USER" ] ; then
     exit 0 # wait for future handshake from database service unit
 fi
 
-cat > ${UNIT_DIR}/db_settings.py << EOF
+cat > ${APP_DIR}/db_settings.py << EOF
 # Settings for database connexion
 
 DATABASES = {
@@ -39,8 +41,8 @@ DATABASES = {
 EOF
 
 
-python ${UNIT_DIR}/manage.py syncdb --noinput
-python ${UNIT_DIR}/manage.py migrate --noinput
+python ${APP_DIR}/manage.py syncdb --noinput
+python ${APP_DIR}/manage.py migrate --noinput
 
 chown www-data ${UNIT_DIR} -R
 chmod g+rw ${UNIT_DIR} -R

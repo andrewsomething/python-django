@@ -1,0 +1,13 @@
+#!/bin/bash
+
+UNIT_NAME=$(echo $JUJU_UNIT_NAME | cut -d/ -f1)
+VCS=$(config-get vcs)
+REPOS_URL=$(config-get repos_url)
+UNIT_DIR=/srv/${UNIT_NAME}
+APP_PATH=$(config-get application_path)
+if [ -n "$APP_PATH" ]; then
+    APP_DIR=${UNIT_DIR}/${APP_PATH}
+else
+    APP_DIR=${UNIT_DIR}
+fi
+
