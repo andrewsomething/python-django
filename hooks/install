@@ -1,8 +1,8 @@
 #!/bin/bash
 set -e
 
-UNIT_NAME=`echo $JUJU_UNIT_NAME | cut -d/ -f1`
-VCS=$(config-get vcs)
+source $(dirname "$0")/common.incl
+
 REPOS_URL=$(config-get repos_url)
 REPOS_USERNAME=$(config-get repos_username)
 REPOS_PASSWORD=$(config-get repos_password)
@@ -30,27 +30,27 @@ fi
 apt-get install -y python-django python-imaging python-docutils python-psycopg2 python-pip python-jinja2 mercurial git-core subversion bzr postgresql-client $EXTRA_DEB_PKGS
 
 
-if [ ! -d "/srv/${UNIT_NAME}" ]; then
+if [ ! -d "${UNIT_DIR}" ]; then
 
 	case $VCS in
 	hg)
-	    hg clone ${REPOS_URL} /srv/${UNIT_NAME}
+	    hg clone ${REPOS_URL} ${UNIT_DIR}
 	    ;;
 	git)
-	    git clone ${REPOS_URL} /srv/${UNIT_NAME}
+	    git clone ${REPOS_URL} ${UNIT_DIR}
 	    ;;
     bzr)
-	    bzr branch ${REPOS_URL} /srv/${UNIT_NAME}
+	    bzr branch ${REPOS_URL} ${UNIT_DIR}
 	    ;;
 	svn)
-	    svn co ${REPOS_URL} /srv/${UNIT_NAME}
+	    svn co ${REPOS_URL} ${UNIT_DIR}
 	    ;;
 	esac
 fi
 
-mkdir -p /srv/${UNIT_NAME}/run
-mkdir -p /srv/${UNIT_NAME}/logs
+mkdir -p ${UNIT_DIR}/run
+mkdir -p ${UNIT_DIR}/logs
 
-cd /srv/${UNIT_NAME}/
+cd ${UNIT_DIR}
 pip install -r ${REQUIREMENTS} || true
 
