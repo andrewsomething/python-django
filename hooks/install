@@ -4,6 +4,7 @@ set -e
 source $(dirname "$0")/common.incl
 
 REPOS_URL=$(config-get repos_url)
+REPOS_BRANCH=$(config-get repos_branch)
 REPOS_USERNAME=$(config-get repos_username)
 REPOS_PASSWORD=$(config-get repos_password)
 EXTRA_DEB_PKGS=$(config-get extra_deb_pkgs)
@@ -37,7 +38,11 @@ if [ ! -d "${UNIT_DIR}" ]; then
 	    hg clone ${REPOS_URL} ${UNIT_DIR}
 	    ;;
 	git)
-	    git clone ${REPOS_URL} ${UNIT_DIR}
+	    if [ -n "$REPOS_BRANCH" ]; then
+	        git clone ${REPOS_URL} -b ${REPOS_BRANCH} ${UNIT_DIR}
+        else
+    	    git clone ${REPOS_URL} ${UNIT_DIR}
+	    fi
 	    ;;
     bzr)
 	    bzr branch ${REPOS_URL} ${UNIT_DIR}

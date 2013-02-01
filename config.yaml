@@ -8,6 +8,14 @@ options:
         type: string
         default: ""
         description: The vcs url to checkout.
+    repos_branch:
+        type: string
+        default: ""
+        description: |
+          The repo branch to pull out from. If empty, it will pull out the
+          default branch or trunk (such as origin/master with git).
+          Note that this setting is ignored for bzr and svn as the branch is
+          specified in the URL for both of them.
     repos_username:
         type: string
         default: ""
