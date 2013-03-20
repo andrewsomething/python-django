@@ -18,11 +18,20 @@ description: |
 provides:
   website:
     interface: http
+    optional: true
   wsgi:
     interface: wsgi
+    scope: container
+  django-settings:
+    interface: directory-path
     scope: container
 requires:
   db:
     interface: pgsql
+    optional: true
+  database:
+    interface: mongodb
+    optional: true
   cache:
     interface: memcache
+    optional: true

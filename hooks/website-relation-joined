@@ -1,14 +1,1 @@
-#!/bin/bash
-set -e
-
-unit_name=${JUJU_UNIT_NAME//\//-}
-
-if [ -e /etc/gunicorn.d/${unit_name}.conf ]; then
-
-    bind_line=$(grep "bind=0.0.0.0:" /etc/gunicorn.d/${unit_name}.conf)
-    PORT=$(echo ${bind_line} | grep -o ":[0-9]*" | sed -e "s/://")
-
-    juju-log "PORT=${PORT}"
-
-    relation-set port="${PORT}" hostname=`unit-get private-address`
-fi
+hooks.py

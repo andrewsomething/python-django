@@ -4,8 +4,6 @@ TODO
 * cron/celery
 * rsyslog
 * graphite
-* media_url
-* extra static path
 * create bucket + read/write permissions
 
 External services

@@ -1,0 +1,82 @@
+#!/usr/bin/python
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+from helpers import (
+    command,
+    make_charm_config_file,
+    maintain_charm_revision,
+    unit_info,
+    upgrade_charm,
+    wait_for_page_contents,
+    wait_for_unit,
+    )
+import os.path
+import time
+import unittest
+
+juju = command('juju')
+
+
+class TestCharm(unittest.TestCase):
+
+#    def tearDown(self):
+#        juju('destroy-service', 'postgresql')
+#        juju('destroy-service', 'python-django')
+#        juju('destroy-service', 'gunicorn')
+
+    def deploy(self, charm_config=None):
+        if charm_config is not None:
+            charm_config_file = make_charm_config_file(charm_config)
+        juju('deploy', '--repository', '../', 'local:postgresql')
+        juju('deploy', '--repository', '../', '--config=' + charm_config_file.name, 'local:python-django')
+        juju('deploy', 'gunicorn')
+        juju('add-relation', 'python-django:db', 'postgresql:db')
+        juju('add-relation', 'python-django', 'gunicorn')
+
+
+    def expose_and_check_page(self):
+        juju('expose', 'python-django')
+        addr = unit_info('python-django', 'public-address')
+        url = 'http://{}:8080/admin/'.format(addr)
+        wait_for_page_contents(url, 'Administration de Django', timeout=1000)
+
+    def get_config(self):
+        return {
+            'vcs': 'bzr',
+            'repos_url': "lp:~patrick-hetu/+junk/paste_site",
+            'site_secret_key': 'abcdefghijklmmnopqrstuvwxyz'
+        }
+
+    def test_port_opened(self):
+        # Deploying a buildbot master should result in it opening a port and
+        # serving its status via HTTP.
+        self.deploy(self.get_config())
+        self.expose_and_check_page()
+
+#    def test_lpbuildbot(self):
+        # Deploying a Launchpad-specific buildbot master does a good job of
+        # exercising the configuration parameters.  For example, the
+        # configuration in this test adds a repository (lucid main universe),
+        # installs a non-default buildbot package, and fetches the buildbot
+        # configuration from bzr.
+#        charm_config = {
+#            'python-django': {
+#                'vcs': 'bzr',
+#            }}
+#        self.deploy(charm_config)
+#        self.expose_and_check_page()
+
+#    def test_upgrade_charm(self):
+        # Ensure the charm can be upgraded without errors.
+#        self.deploy(self.get_config())
+#        with maintain_charm_revision():
+#            upgrade_charm('python-django')
+        # Wait for the charm to upgrade using sleep, since there is no
+        # other confirmation at the moment but the state to remain 'started'.
+#        time.sleep(10)
+#        self.expose_and_check_page()
+
+
+if __name__ == '__main__':
+    unittest.main()

@@ -1,0 +1,48 @@
+#------------------------------------------------------------------------------
+# This file is managed by Juju
+#------------------------------------------------------------------------------
+
+import os
+
+PROJECT_ROOT = os.path.dirname(__file__)
+
+class SwiftAuthentication(object):
+    """Auth container to pass CloudFiles storage URL and token from
+    session.
+    """
+    def __init__(self, auth_url, username, password, tenant_id):
+        self.auth_url = auth_url
+        self.username = username
+        self.password = password
+        self.tenant_id = tenant_id
+
+    def authenticate(self):
+        from keystoneclient.v2_0 import client as ksclient
+        _ksclient = ksclient.Client(username=self.username,
+                                    password=self.password,
+                                    tenant_id=self.tenant_id,
+                                    auth_url=self.auth_url)
+        endpoint = _ksclient.service_catalog.url_for(service_type='object-store',
+                        endpoint_type='publicURL')
+
+        return (endpoint, '', _ksclient.auth_token)
+
+auth = SwiftAuthentication('$SWIFT_AUTH_URL', '$SWIFT_USERNAME', '$SWIFT_PASSWORD', '$SWIFT_TENANTID')
+
+MEDIA_URL = "$SWIFT_ENDPOINT_URL/$SWIFT_VERSION/$SWIFT_TENANTID/$SWIFT_CONTAINER_NAME/uploads/"
+
+ADMIN_MEDIA_PREFIX = '$SWIFT_ENDPOINT_URL/$SWIFT_VERSION/$SWIFT_TENANTID/$SWIFT_CONTAINER_NAME/static/admin/'
+
+STATICFILES_URL = '$SWIFT_ENDPOINT_URL/$SWIFT_VERSION/$SWIFT_TENANTID/$SWIFT_CONTAINER_NAME/static/'
+STATIC_URL =  STATICFILES_URL
+
+DEFAULT_FILE_STORAGE = 'cumulus.storage.CloudFilesStorage'
+STATICFILES_STORAGE = 'cumulus.storage.CloudFilesStaticStorage'
+
+CUMULUS = {
+    'CONNECTION_ARGS': {'auth' : auth},
+    'CONTAINER': '$SWIFT_CONTAINER_NAME'
+}
+
+COMPRESS_STORAGE = "cumulus.storage.CachedCloudFilesStaticStorage"
+

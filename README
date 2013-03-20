@@ -12,33 +12,60 @@ Example deployment
         vcs: bzr
         repos_url: lp:~patrick-hetu/my_site
         extra_deb_pkgs: python-dateutils
-        site_domain:
-        site_username:
-        site_password:
-        site_admin_email:
-        site_secret_key:
-        auth_url:
-        api_key:
-        wsgi_worker_class:
-        swift_version:
-        swift_prefix:
-        swift_username:
-        swift_container_name:
 
-2. Deployment with Gunicorn::
+2. Deployment with `Gunicorn`::
 
     juju bootstrap
-    juju deploy --config my_django_site.yaml python-django
+    juju deploy --config my_django_site.yaml my_django_site
     juju deploy gunicorn
-    juju add-relation gunicorn python-django
+    juju add-relation gunicorn my_django_site
     juju expose gunicorn
 
-3. Accessing your new moinmoin wiki should be ready at::
+3. Accessing your new django site should be ready at::
 
        http://<machine-addr>/ 
 
    To find out the public address of gunicorn, look for it in the output of the
    `juju status` command.  
+
+What the charm does
+-------------------
+
+Management with Fabfile
+-----------------------
+
+To make Juju more PAAS'ish the charm include a Fabric script that use Juju's
+output to populate env.roledefs with Services and Units.
+
+So, with a python-django service deployed you can do things like::
+
+    fab -R python-django pull
+    [10.0.0.2] Executing task 'pull'
+    [10.0.0.2] run: bzr pull lp:~my_name/django_code/my_site
+    ...
+    [10.0.0.2] run: invoke-rc.d gunicorn restart
+    ...
+
+fabfile.py include the following commands::
+
+
+Project Layout
+--------------
+
+Be sure to have the settings directory in your repos and be sure to include
+those lines or something equivalent in your settings.py::
+
+    import glob
+    from os.path import abspath, dirname, join
+
+    PROJECT_DIR = abspath(dirname(__file__))
+
+    conffiles = glob.glob(join(PROJECT_DIR, 'settings', '*.py'))
+    conffiles.sort()
+
+    for f in conffiles:
+        execfile(abspath(f))
+
 
 Security
 --------
@@ -46,3 +73,32 @@ Security
 Note that if your using a *requirement.txt* file the packages will
 be downloaded with *pip*. *Pip* is not doing any cryptographical
 verification of its downloads so this be a security risk.
+
+Changelog
+---------
+
+2:
+
+  * You can configure all wsgi (Gunicorn) settings via the config.yaml file
+  * Juju compatible Fabric fabfile.py is included for PAAS commands
+  * Swift storage backend is now optional
+
+  Backwards incompatible changes:
+
+    * Use splited settings and urls
+    * Permissons are now based on WSGI's user and group instead of just being www-data
+    * media and static files are now in new directories ./uploads and ./static/
+    * Deprecated configuration variables: site_domain, site_username, site_password, site_admin_email
+
+
+1:
+  Initial release
+
+Inspiration
+-----------
+
+* http://www.deploydjango.com
+* http://lincolnloop.com/django-best-practices/
+* https://github.com/30loops/djangocms-on-30loops.git
+* https://github.com/openshift/django-example
+* http://lincolnloop.com/blog/2013/feb/15/django-settings-parity-youre-doing-it-wrong/

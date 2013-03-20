@@ -1,0 +1,19 @@
+#------------------------------------------------------------------------------
+# This file is managed by Juju
+#------------------------------------------------------------------------------
+
+# Settings for database connexion
+
+DATABASES = {
+    "default": {
+        "ENGINE": 'django.db.backends.postgresql_psycopg2',
+        "NAME": '{{ db_database }}',
+        "USER": '{{ db_user }}',
+        "PASSWORD": '{{ db_password }}',
+        "HOST": '{{ db_host }}',
+        "PORT": '',
+    }
+}
+
+DATABASE_ENGINE=DATABASES
+

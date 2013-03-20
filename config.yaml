@@ -8,14 +8,6 @@ options:
         type: string
         default: ""
         description: The vcs url to checkout.
-    repos_branch:
-        type: string
-        default: ""
-        description: |
-          The repo branch to pull out from. If empty, it will pull out the
-          default branch or trunk (such as origin/master with git).
-          Note that this setting is ignored for bzr and svn as the branch is
-          specified in the URL for both of them.
     repos_username:
         type: string
         default: ""
@@ -24,68 +16,84 @@ options:
         type: string
         default: ""
         description: The vcs password.
-    application_path:
+    repos_branch:
         type: string
         default: ""
         description: |
-          The relative path to the root of the Django application tree where the manage.py
-          script is located.
-    extra_deb_pkgs:
+          The repo branch to pull out from. If empty, it will pull out the
+          default branch or trunk (such as origin/master with git).
+          Note that this setting is ignored for bzr and svn as the branch is
+          specified in the URL for both of them.
+    install_root:
+        type: string
+        default: "/srv/"
+        description: The vcs url to checkout.
+    additional_distro_packages:
         type: string
         default: ""
-        description: Extra Debian packages to install
-    requirements:
-        type: string
-        default: "./requirements.txt"
         description: |
-          The relative path to the requirement file. Note that the charm
+          Comma separated extra packages to install.
+    additional_pip_packages:
+        type: string
+        default: ""
+        description: |
+          Comma separated extra packages to install.
+    requirements_pip_files:
+        type: string
+        default: "requirements.txt,requirements.pip"
+        description: |
+          Comma separated relative paths to requirement files. Note that the charm
           won't manually upgrade packages defined in this file.
-    site_domain:
+          Set the variable to an empty string if you don't want the feature.
+    requirements_apt_files:
         type: string
-        default: "example.com"
-        description: The domain name of the web site. This variable can't be changed after installation.
-    site_username:
-        type: string
-        default: "admin"
-        description: The web site administrator username. This variable can't be changed after installation.
-    site_password:
-        type: string
-        default: "changeme"
-        description: The web site administrator password. This variable can't be changed after installation.
-    site_admin_email:
+        default: "requirements.apt"
+        description: |
+          Comma separated relative paths to requirement files. Note that the charm
+          won't manually upgrade packages defined in this file.
+          Set the variable to an empty string if you don't want the feature.
+    django_settings:
         type: string
         default: ""
-        description: The web site administrator email. This variable can't be changed after installation.
+        description: |
+          The Python path to a Django settings module.
+          Leave it empty for project root.
+    settings_database_path:
+        type: string
+        default: "settings/20-engine.py"
+        description: |
+          The place where the database configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_uploads_path:
+        type: string
+        default: "settings/20-uploads.py"
+        description: |
+          The place where the media files configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_static_path:
+        type: string
+        default: "settings/20-static.py"
+        description: |
+          The place where the static files configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_cache_path:
+        type: string
+        default: "settings/30-cache.py"
+        description: |
+          The place where the cache configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_secret_key_path:
+        type: string
+        default: "settings/10-secret.py"
+        description: |
+          The place where the secret key configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
     site_secret_key:
         type: string
         default: ''
         description: |
-          The web site secret key. Leave empty will generate one (Note: you don't
-          want that in a multi-unit architechture).
-    swift_auth_url:
-        type: string
-        default: ""
-        description: Swift authentification url
-    swift_api_key:
-        type: string
-        default: ""
-        description: Swift authentification key
-    swift_version:
-        type: string
-        default: 'v1'
-        description: Swift version 
-    swift_prefix:
-        type: string
-        default: 'AUTH_'
-        description: Swift username prefix 
-    swift_username:
-        type: string
-        default: ''
-        description: Swift username
-    swift_container_name:
-        type: string
-        default: ''
-        description: Swift container name
+          The web site secret key. Leave empty will generate one.
+          NOTE: You don't want that in a multi-units architecture.
     wsgi_wsgi_file:
         type: string
         description: "The name of the WSGI application."
@@ -153,10 +161,6 @@ options:
         type: string
         default: ""
         description: "The variable to modify to trigger Gunicorn reload"
-    django_settings:
-        type: string
-        default: ""
-        description: "The Python path to a Django settings module."
     python_path:
         type: string
         default: ""
