@@ -1,7 +1,7 @@
 options:
     vcs:
         type: string
-        default: "git"
+        default: ""
         description: |
           The vcs software to use. Only hg, git, bzr, and svn are currently supported.
     repos_url:

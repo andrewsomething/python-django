@@ -293,14 +293,15 @@ def token_sql_safe(value):
         return False
     return True
 
+def sanitize(s):
+    s = s.replace(':', '_')
+    s = s.replace('-', '_')
+    s = s.replace('/', '_')
+    s = s.replace('"', '_')
+    s = s.replace("'", '_')
+    return s
+
 def user_name(relid, remote_unit, admin=False, schema=False):
-    def sanitize(s):
-        s = s.replace(':', '_')
-        s = s.replace('-', '_')
-        s = s.replace('/', '_')
-        s = s.replace('"', '_')
-        s = s.replace("'", '_')
-        return s
     components = [sanitize(relid), sanitize(remote_unit)]
     if admin:
         components.append("admin")
@@ -377,6 +378,11 @@ def install(run_pre=True):
         run('bzr branch %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == 'svn' or vcs == 'subversion':
         run('svn co %s %s' % (repos_url, vcs_clone_dir))
+    elif vcs == '' and repos_url == '':
+        juju_log(MSG_INFO, "No version control using local template")
+        run('cp -r %s %s' % (os.path.join(os.environ['CHARM_DIR'],'template_site'),
+                             working_dir))
+        run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
         sys.exit(1)
@@ -413,12 +419,15 @@ def config_changed(config_data):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def django_settings_relation_joined_changed():
-    relation_set({'django_settings_path': settings_path})
+    relation_set({'working_dir':working_dir})
 
 def django_settings_relation_broken():
     pass
 
 def db_relation_joined_changed():
+    database = relation_get("database")
+    if not database:
+        return
 
     # --- exported service configuration file
     from jinja2 import Environment, FileSystemLoader
@@ -426,7 +435,7 @@ def db_relation_joined_changed():
         loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
         'templates')))
     templ_vars = {
-       'db_database': relation_get("database"),
+       'db_database': database,
        'db_user': relation_get("user"),
        'db_password': relation_get("password"),
        'db_host': relation_get("host"),
@@ -477,6 +486,7 @@ repos_url = config_data['repos_url']
 repos_username = config_data['repos_username']
 repos_password = config_data['repos_password']
 repos_branch = config_data['repos_branch']
+
 extra_deb_pkgs = config_data['additional_distro_packages']
 extra_pip_pkgs = config_data['additional_pip_packages']
 requirements_pip_files = config_data['requirements_pip_files']
@@ -523,7 +533,7 @@ def main():
         config_changed(config_data)
 
     elif hook_name in ["db-relation-joined", "db-relation-changed"]:
-        relation_set({'database':unit_name})
+        relation_set({'database':sanitize(unit_name)})
         db_relation_joined_changed()
         config_changed(config_data)
 
@@ -532,7 +542,7 @@ def main():
         config_changed(config_data)
 
     elif hook_name in ["database-relation-joined", "database-relation-changed"]:
-        relation_set({'database':unit_name})
+        relation_set({'database':sanitize(unit_name)})
         database_relation_joined_changed(unit_name)
         config_changed(config_data)
 

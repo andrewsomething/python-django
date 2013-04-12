@@ -1,0 +1,3 @@
+south
+django_compressor
+-e git+https://github.com/avoine/Lesscpy.git#egg=lesscpy

@@ -3,25 +3,42 @@ Juju charm python-django
 
 :Author: Patrick Hetu <patrick@koumbit.org>
 
+.. caution::
+    This charm is under heavy development; expect some bumps on your road.
+
 Example deployment
 ------------------
 
-1. Setup your wiki specific parameters in mywiki.yaml like this::
+1. Setup your Django specific parameters in my_django_site.yaml like this one::
 
     my_django_site:
         vcs: bzr
         repos_url: lp:~patrick-hetu/my_site
-        extra_deb_pkgs: python-dateutils
+        additional_distro_packages: python-dateutils
+
+Note: 
+
+    If your using juju-core you must remove the first line
+    of the file and indent the rest according to that.
 
 2. Deployment with `Gunicorn`::
 
     juju bootstrap
     juju deploy --config my_django_site.yaml my_django_site
+
+    juju deploy postgresql
+    juju add-relation my_django_site:db postgresql:db
+
     juju deploy gunicorn
-    juju add-relation gunicorn my_django_site
+    juju add-relation my_django_site gunicorn
     juju expose gunicorn
 
-3. Accessing your new django site should be ready at::
+Note:
+
+    If your using juju-core you must add --upload-tools to the
+    `juju bootstrap` command.
+
+3. Accessing your new Django site should be ready at::
 
        http://<machine-addr>/ 
 
@@ -30,6 +47,24 @@ Example deployment
 
 What the charm does
 -------------------
+
+During the `install` hook:
+
+* installs Django
+* clones your Django site from the repo specified in `repos_url`
+* installs the extra Debian packages
+* installs python packages from extra pip options and from requirements files
+* sits back and waits to be joined to a database
+
+when related to a `gunicorn` service, the charm
+
+* configures gunicorn
+* start or restart Gunicorn
+
+when related to a `postgresql` service, the charm
+
+* configures db access 
+* restart Gunicorn
 
 Management with Fabfile
 -----------------------
@@ -46,8 +81,26 @@ So, with a python-django service deployed you can do things like::
     [10.0.0.2] run: invoke-rc.d gunicorn restart
     ...
 
-fabfile.py include the following commands::
+fabfile.py include the following commands:
 
+* apt_install
+* apt_update
+* apt_dist_upgrade
+* apt_install_r
+* pip_install
+* pip_install_r
+* adduser
+* ssh_add_key
+* pull
+* reload
+* manage
+* migrate
+* syncdb
+* collectstatic
+* db_list
+* db_backup
+* db_restore
+* delete_pyc
 
 Project Layout
 --------------
@@ -71,12 +124,30 @@ Security
 --------
 
 Note that if your using a *requirement.txt* file the packages will
-be downloaded with *pip*. *Pip* is not doing any cryptographical
-verification of its downloads so this be a security risk.
+be downloaded with *pip* and it doesn't do any cryptographic
+verification of its downloads.
 
 Changelog
 ---------
 
+3:
+
+  * Rewrite the charm using python instead of BASH scripts
+  * Default project template is available if no repos is specified
+
+  Configuration changes:
+
+    * default user and group is now ubuntu
+    * new install_root option
+    * new additional_pip_packages option
+    * new repos_branch,repos_username,repos_password options
+    * database, uploads, static, secret and cache settings locations are now configurable
+    * extra_deb_pkg was renamed additional_distro_packages
+    * requirements was renamed requirements_pip_files and now support multiple files
+    
+  Backwards incompatible changes:
+
+    * swift support was moved to a subordinate charm
 2:
 
   * You can configure all wsgi (Gunicorn) settings via the config.yaml file
