@@ -321,6 +321,19 @@ def get_unit_host():
     this_host = run("unit-get private-address")
     return this_host.strip()
 
+def process_template(template_name, template_vars, destination):
+    # --- exported service configuration file
+    from jinja2 import Environment, FileSystemLoader
+    template_env = Environment(
+        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
+        'templates')))
+
+    template = \
+        template_env.get_template(template_name).render(template_vars)
+
+    with open(destination, 'w') as inject_file:
+        inject_file.write(str(template))
+
 ###############################################################################
 # Hook functions
 ###############################################################################
@@ -338,14 +351,32 @@ def install(run_pre=True):
         for package in extra_pip_pkgs.split(','):
             pip_install(package)
 
+    if repos_username:
+        m = re.match(".*://([^/]+)/.*", repos_url)
+        if m is not None:
+            repos_domain = m.group(1)
+            template_vars = {
+                'repos_domain': repos_domain,
+                'repos_username': repos_username,
+                'repos_password': repos_password
+            }
+            from os.path import expanduser
+            process_template('netrc.tmpl', template_vars, expanduser('~/.netrc'))
+        else:
+            juju_log(MSG_ERROR, '''Failed to process repos_username and repos_password:\n
+                                   cannot identify domain in URL {0}'''.format(repos_url))
+        
     if vcs == 'hg' or vcs == 'mercurial':
-        run('hg clone %s %s' % (repos_url, working_dir))
+        run('hg clone %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == 'git' or vcs == 'git-core':
-        run('git clone %s %s' % (repos_url, working_dir))
+        if repos_branch:
+            run('git clone %s -b %s %s' % (repos_url, repos_branch, vcs_clone_dir))
+        else:
+            run('git clone %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == 'bzr' or vcs == 'bazaar':
-        run('bzr branch %s %s' % (repos_url, working_dir))
+        run('bzr branch %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == 'svn' or vcs == 'subversion':
-        run('svn co %s %s' % (repos_url, working_dir))
+        run('svn co %s %s' % (repos_url, vcs_clone_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
         sys.exit(1)
@@ -443,15 +474,23 @@ def wsgi_relation_joined_changed():
 config_data = config_get()
 vcs = config_data['vcs']
 repos_url = config_data['repos_url']
+repos_username = config_data['repos_username']
+repos_password = config_data['repos_password']
+repos_branch = config_data['repos_branch']
 extra_deb_pkgs = config_data['additional_distro_packages']
 extra_pip_pkgs = config_data['additional_pip_packages']
 requirements_pip_files = config_data['requirements_pip_files']
 wsgi_user = config_data['wsgi_user']
 wsgi_group = config_data['wsgi_group']
 install_root = config_data['install_root']
+application_path = config_data['application_path']
 
 unit_name = os.environ['JUJU_UNIT_NAME'].split('/')[0]
-working_dir = os.path.join(install_root, unit_name)
+vcs_clone_dir = os.path.join(install_root, unit_name)
+if application_path:
+    working_dir = os.path.join(vcs_clone_dir, application_path)
+else:
+    working_dir = vcs_clone_dir
 manage_path = os.path.join(working_dir, 'manage.py')
 django_run_dir = os.path.join(working_dir, "run/")
 django_logs_dir = os.path.join(working_dir, "logs/")
