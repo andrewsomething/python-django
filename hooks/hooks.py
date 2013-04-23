@@ -449,12 +449,14 @@ def config_changed(config_data):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def django_settings_relation_joined_changed():
-    relation_set({'working_dir':working_dir})
+    relation_set({'settings_dir_path': settings_dir_path,
+                  'urls_dir_path': urls_dir_path,
+                 })
 
 def django_settings_relation_broken():
     pass
 
-def db_relation_joined_changed():
+def pgsql_relation_joined_changed():
     database = relation_get("database")
     if not database:
         return
@@ -479,13 +481,13 @@ def db_relation_joined_changed():
 
     run("%s syncdb --noinput || true" % manage_path)
 
-def db_relation_broken():
+def pgsql_relation_broken():
     pass
 
-def database_relation_joined_changed():
+def mongodb_relation_joined_changed():
     pass
 
-def database_relation_broken():
+def mongodb_relation_broken():
     pass
 
 def wsgi_relation_joined_changed():
@@ -570,20 +572,20 @@ def main():
         django_settings_relation_broken()
         config_changed(config_data)
 
-    elif hook_name in ["db-relation-joined", "db-relation-changed"]:
-        db_relation_joined_changed()
+    elif hook_name in ["pgsql-relation-joined", "pgsql-relation-changed"]:
+        pgsql_relation_joined_changed()
         config_changed(config_data)
 
-    elif hook_name == "db-relation-broken":
-        db_relation_broken()
+    elif hook_name == "pgsql-relation-broken":
+        pgsql_relation_broken()
         config_changed(config_data)
 
-    elif hook_name in ["database-relation-joined", "database-relation-changed"]:
-        database_relation_joined_changed()
+    elif hook_name in ["mongodb-relation-joined", "mongodb-relation-changed"]:
+        mongodb_relation_joined_changed()
         config_changed(config_data)
 
-    elif hook_name == "database-relation-broken":
-        database_relation_broken()
+    elif hook_name == "mongodb-relation-broken":
+        mongodb_relation_broken()
         config_changed(config_data)
 
     elif hook_name in ["wsgi-relation-joined", "wsgi-relation-changed"]:
