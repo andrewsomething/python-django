@@ -11,6 +11,11 @@ from pwd import getpwnam
 from grp import getgrnam
 from random import choice
 
+INJECTED_WARNING = """
+        #------------------------------------------------------------------------------
+        # The following is the import code for the settings directory injected by Juju
+        #------------------------------------------------------------------------------
+"""
 
 # jinja2 may not be importable until the install hook has installed the
 # required packages.
@@ -393,22 +398,28 @@ def install(run_pre=True):
         sys.exit(1)
 
 
-    #FIXME: Upgrades/pulls will mess this files
+    #FIXME: Upgrades/pulls will mess those files
     from jinja2 import Environment, FileSystemLoader
     template_env = Environment(
         loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
         'templates')))
 
-    template = \
-        template_env.get_template('settings.tmpl').render()
+    for dir, path in ((settings_py_path, 'juju_settings'), (urls_py_path, 'juju_urls')):
+        template = \
+            template_env.get_template('conf_injection.tmpl').render({'dir': dir})
 
-    with open(settings_py_path, 'a') as inject_file:
-        inject_file.write(str(template))
+        with open(path, 'a') as inject_file:
+            if not str(template) in inject_file:
+                inject_file.write(INJECTED_WARNING)
+                inject_file.write(str(template))
 
     if requirements_pip_files:
        for req_file in requirements_pip_files.split(','):
             pip_install_req(os.path.join(working_dir,req_file))
 
+    install_dir(settings_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
+    install_dir(urls_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
+    install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
     install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
     install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
 
@@ -529,7 +540,9 @@ manage_path = os.path.join(working_dir, 'manage.py')
 django_run_dir = os.path.join(working_dir, "run/")
 django_logs_dir = os.path.join(working_dir, "logs/")
 settings_py_path = os.path.join(working_dir, 'settings.py')
-settings_path = os.path.join(working_dir, 'settings/')
+urls_py_path = os.path.join(working_dir, 'urls.py')
+settings_dir_path = os.path.join(working_dir, 'juju_settings/')
+urls_dir_path = os.path.join(working_dir, 'juju_urls/')
 settings_secret_path = os.path.join(working_dir, config_data["settings_secret_key_path"])
 settings_database_path = os.path.join(working_dir, config_data["settings_database_path"])
 hook_name = os.path.basename(sys.argv[0])
