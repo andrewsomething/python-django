@@ -26,10 +26,10 @@ provides:
     interface: directory-path
     scope: container
 requires:
-  db:
+  pgsql:
     interface: pgsql
     optional: true
-  database:
+  mongodb:
     interface: mongodb
     optional: true
   cache:
