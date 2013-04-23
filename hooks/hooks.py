@@ -345,9 +345,8 @@ def process_template(template_name, template_vars, destination):
 # Hook functions
 ###############################################################################
 def install(run_pre=True):
-    packages = ["python-django", "python-imaging", "python-docutils", "python-psycopg2",
-                "python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr",
-                "python-tz", "postgresql-client"]
+    packages = ["python-django", "python-imaging", "python-docutils", "python-tz",
+                "python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
 
     apt_get_install(packages)
             
@@ -457,6 +456,9 @@ def django_settings_relation_broken():
     pass
 
 def pgsql_relation_joined_changed():
+    packages = ["python-psycopg2", "postgresql-client"]
+    apt_get_install(packages)
+
     database = relation_get("database")
     if not database:
         return
@@ -467,6 +469,7 @@ def pgsql_relation_joined_changed():
         loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
         'templates')))
     templ_vars = {
+       'db_engine': 'django.db.backends.postgresql_psycopg2',
        'db_database': database,
        'db_user': relation_get("user"),
        'db_password': relation_get("password"),
@@ -485,7 +488,28 @@ def pgsql_relation_broken():
     pass
 
 def mongodb_relation_joined_changed():
-    pass
+    packages = ["python-mongoengine"]
+    apt_get_install(packages)
+
+    database = relation_get("database")
+    if not database:
+        return
+
+    # --- exported service configuration file
+    from jinja2 import Environment, FileSystemLoader
+    template_env = Environment(
+        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
+        'templates')))
+    templ_vars = {
+       'db_database': database,
+       'db_host': relation_get("host"),
+    }
+
+    template = \
+        template_env.get_template('mongodb_engine.tmpl').render(templ_vars)
+
+    with open(settings_database_path, 'w') as inject_file:
+        inject_file.write(str(template))
 
 def mongodb_relation_broken():
     pass
