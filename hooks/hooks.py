@@ -9,6 +9,7 @@ import sys
 import time
 from pwd import getpwnam
 from grp import getgrnam
+from random import choice
 
 
 # jinja2 may not be importable until the install hook has installed the
@@ -412,7 +413,8 @@ def install(run_pre=True):
     install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
 
 def config_changed(config_data):
-    # FIXME Gen key if empty
+    if not site_secret_key:
+        site_secret_key = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
 
     # --- exported service configuration file
     from jinja2 import Environment, FileSystemLoader
@@ -420,7 +422,7 @@ def config_changed(config_data):
         loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
         'templates')))
     templ_vars = {
-       'site_secret_key': config_data['site_secret_key'],
+       'site_secret_key': site_secret_key,
     }
 
     template = \
@@ -511,6 +513,7 @@ project_template_url = config_data['project_template_url']
 extra_deb_pkgs = config_data['additional_distro_packages']
 extra_pip_pkgs = config_data['additional_pip_packages']
 requirements_pip_files = config_data['requirements_pip_files']
+site_secret_key = config_data['site_secret_key']
 wsgi_user = config_data['wsgi_user']
 wsgi_group = config_data['wsgi_group']
 install_root = config_data['install_root']
