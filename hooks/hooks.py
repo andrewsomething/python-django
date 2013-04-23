@@ -379,13 +379,30 @@ def install(run_pre=True):
     elif vcs == 'svn' or vcs == 'subversion':
         run('svn co %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == '' and repos_url == '':
-        juju_log(MSG_INFO, "No version control using local template")
-        run('cp -r %s %s' % (os.path.join(os.environ['CHARM_DIR'],'template_site'),
-                             working_dir))
+        juju_log(MSG_INFO, "No version control using django-admin startproject")
+        cmd = 'django-admin startproject'
+        if project_template_url:
+            cmd = " ".join(cmd, '--template', project_template_url)
+        if project_template_extension:
+            cmd = " ".join(cmd, '--extension', project_template_extension)
+        run('%s %s' % (cmd, working_dir))
         run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
         sys.exit(1)
+
+
+    #FIXME: Upgrades/pulls will mess this files
+    from jinja2 import Environment, FileSystemLoader
+    template_env = Environment(
+        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
+        'templates')))
+
+    template = \
+        template_env.get_template('settings.tmpl').render()
+
+    with open(settings_py_path, 'a') as inject_file:
+        inject_file.write(str(template))
 
     if requirements_pip_files:
        for req_file in requirements_pip_files.split(','):
@@ -481,11 +498,15 @@ def wsgi_relation_joined_changed():
 # Global variables
 ###############################################################################
 config_data = config_get()
+
 vcs = config_data['vcs']
 repos_url = config_data['repos_url']
 repos_username = config_data['repos_username']
 repos_password = config_data['repos_password']
 repos_branch = config_data['repos_branch']
+
+project_template_extension = config_data['project_template_extension']
+project_template_url = config_data['project_template_url']
 
 extra_deb_pkgs = config_data['additional_distro_packages']
 extra_pip_pkgs = config_data['additional_pip_packages']
@@ -504,6 +525,7 @@ else:
 manage_path = os.path.join(working_dir, 'manage.py')
 django_run_dir = os.path.join(working_dir, "run/")
 django_logs_dir = os.path.join(working_dir, "logs/")
+settings_py_path = os.path.join(working_dir, 'settings.py')
 settings_path = os.path.join(working_dir, 'settings/')
 settings_secret_path = os.path.join(working_dir, config_data["settings_secret_key_path"])
 settings_database_path = os.path.join(working_dir, config_data["settings_database_path"])
