@@ -469,7 +469,7 @@ def db_relation_joined_changed():
 def db_relation_broken():
     pass
 
-def database_relation_joined_changed(database):
+def database_relation_joined_changed():
     pass
 
 def database_relation_broken():
@@ -555,7 +555,6 @@ def main():
         config_changed(config_data)
 
     elif hook_name in ["db-relation-joined", "db-relation-changed"]:
-        relation_set({'database':sanitize(unit_name)})
         db_relation_joined_changed()
         config_changed(config_data)
 
@@ -564,8 +563,7 @@ def main():
         config_changed(config_data)
 
     elif hook_name in ["database-relation-joined", "database-relation-changed"]:
-        relation_set({'database':sanitize(unit_name)})
-        database_relation_joined_changed(unit_name)
+        database_relation_joined_changed()
         config_changed(config_data)
 
     elif hook_name == "database-relation-broken":
