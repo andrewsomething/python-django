@@ -92,33 +92,45 @@ options:
         description: |
           The Python path to a Django settings module.
           Leave it empty for project root.
+    urls_dir_name:
+        type: string
+        default: "juju_urls"
+        description: |
+          The place where the generated urls will be written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_dir_name:
+        type: string
+        default: "juju_settings"
+        description: |
+          The place where the generated settings will be written.
+          Set the variable to an empty string if you don't want the feature.
     settings_database_path:
         type: string
-        default: "settings/20-engine.py"
+        default: "juju_settings/20-engine.py"
         description: |
           The place where the database configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
     settings_uploads_path:
         type: string
-        default: "settings/20-uploads.py"
+        default: "juju_settings/20-uploads.py"
         description: |
           The place where the media files configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
     settings_static_path:
         type: string
-        default: "settings/20-static.py"
+        default: "juju_settings/20-static.py"
         description: |
           The place where the static files configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
     settings_cache_path:
         type: string
-        default: "settings/30-cache.py"
+        default: "juju_settings/30-cache.py"
         description: |
           The place where the cache configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
     settings_secret_key_path:
         type: string
-        default: "settings/10-secret.py"
+        default: "juju_settings/10-secret.py"
         description: |
           The place where the secret key configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
