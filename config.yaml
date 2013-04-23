@@ -1,4 +1,11 @@
 options:
+    site_secret_key:
+        type: string
+        default: ''
+        description: |
+          The web site secret key. Leave empty will generate one.
+          NOTE: You **NEED** to set this in a multi-units architecture or you will
+          have some trouble.
     vcs:
         type: string
         default: ""
@@ -25,6 +32,26 @@ options:
           Note that this setting only applies to git. This option is not
           supported for hg. For svn and bzr, specify the branch name as
           part of the URL.
+    project_template_url:
+        type: string
+        default: ""
+        description: |
+          If not repository url is found, the charm will create a new project. This
+          option is the --template argument value for the startproject command
+          to use a custom project template.
+          
+          Django will also accept URLs (http, https, ftp) to compressed
+          archives with the app template files, downloading and extracting them on the fly.
+          For more informations see:
+            https://docs.djangoproject.com/en/dev/ref/django-admin/#startproject-projectname-destination
+    project_template_extension:
+        type: string
+        default: "py"
+        description: |
+          When Django copies the project template files, it also renders certain
+          files through the template engine: the files whose extensions match the
+          --extension option (py by default) and the files whose names are passed with
+          the --name option.
     install_root:
         type: string
         default: "/srv/"
@@ -95,12 +122,6 @@ options:
         description: |
           The place where the secret key configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
-    site_secret_key:
-        type: string
-        default: ''
-        description: |
-          The web site secret key. Leave empty will generate one.
-          NOTE: You don't want that in a multi-units architecture.
     wsgi_wsgi_file:
         type: string
         description: "The name of the WSGI application."
