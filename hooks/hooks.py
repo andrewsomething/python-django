@@ -40,11 +40,11 @@ def juju_log(level, msg):
 #------------------------------------------------------------------------------
 # run: Run a command, return the output
 #------------------------------------------------------------------------------
-def run(command, exit_on_error=True):
+def run(command, exit_on_error=True, cwd=None):
     try:
         juju_log(MSG_DEBUG, command)
         return subprocess.check_output(
-            command, stderr=subprocess.STDOUT, shell=True)
+            command, stderr=subprocess.STDOUT, shell=True, cwd=cwd)
     except subprocess.CalledProcessError, e:
         juju_log(MSG_ERROR, "status=%d, output=%s" % (e.returncode, e.output))
         if exit_on_error:
@@ -456,7 +456,7 @@ def install(run_pre=True):
             cmd = " ".join([cmd, '--template', project_template_url])
         if project_template_extension:
             cmd = " ".join([cmd, '--extension', project_template_extension])
-        run('%s %s %s' % (cmd, sanitized_unit_name, install_root))
+        run('%s %s' % (cmd, sanitized_unit_name), cwd=install_root)
         run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
