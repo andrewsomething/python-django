@@ -12,7 +12,7 @@ options:
         description: |
           Version or origin from which to install.  May be one of the following:
           distro (default), ppa:somecustom/ppa, a deb url sources entry or
-          a valid pip line like 'Django' or 'Django=1.5' or a reposiroty url (without the -e).
+          a valid pip line like 'Django' or 'Django==1.5' or a reposiroty url (without the -e).
     vcs:
         type: string
         default: ""
@@ -53,7 +53,7 @@ options:
             https://docs.djangoproject.com/en/dev/ref/django-admin/#startproject-projectname-destination
     project_template_extension:
         type: string
-        default: "py"
+        default: ""
         description: |
           When Django copies the project template files, it also renders certain
           files through the template engine: the files whose extensions match the
@@ -116,24 +116,6 @@ options:
         default: "juju_settings/20-engine.py"
         description: |
           The place where the database configuration will be appended or written.
-          Set the variable to an empty string if you don't want the feature.
-    settings_uploads_path:
-        type: string
-        default: "juju_settings/20-uploads.py"
-        description: |
-          The place where the media files configuration will be appended or written.
-          Set the variable to an empty string if you don't want the feature.
-    settings_static_path:
-        type: string
-        default: "juju_settings/20-static.py"
-        description: |
-          The place where the static files configuration will be appended or written.
-          Set the variable to an empty string if you don't want the feature.
-    settings_cache_path:
-        type: string
-        default: "juju_settings/30-cache.py"
-        description: |
-          The place where the cache configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.
     settings_secret_key_path:
         type: string
