@@ -408,8 +408,7 @@ def find_django_admin_cmd():
 # Hook functions
 ###############################################################################
 def install(run_pre=True):
-    packages = ["python-imaging", "python-docutils", "python-tz",
-                "python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
+    packages = ["python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
 
     apt_get_install(packages)
     configure_and_install(django_version)

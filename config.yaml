@@ -71,7 +71,7 @@ options:
           script is located.
     additional_distro_packages:
         type: string
-        default: ""
+        default: "python-imaging,python-docutils,python-tz"
         description: |
           Comma separated extra packages to install.
     additional_pip_packages:
