@@ -6,6 +6,13 @@ options:
           The web site secret key. Leave empty will generate one.
           NOTE: You **NEED** to set this in a multi-units architecture or you will
           have some trouble.
+    django_version:
+        type: string
+        default: "distro"
+        description: |
+          Version or origin from which to install.  May be one of the following:
+          distro (default), ppa:somecustom/ppa, a deb url sources entry or
+          a valid pip line like 'Django' or 'Django=1.5' or a reposiroty url (without the -e).
     vcs:
         type: string
         default: ""

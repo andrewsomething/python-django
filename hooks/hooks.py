@@ -12,9 +12,9 @@ from grp import getgrnam
 from random import choice
 
 INJECTED_WARNING = """
-        #------------------------------------------------------------------------------
-        # The following is the import code for the settings directory injected by Juju
-        #------------------------------------------------------------------------------
+#------------------------------------------------------------------------------
+# The following is the import code for the settings directory injected by Juju
+#------------------------------------------------------------------------------
 """
 
 # jinja2 may not be importable until the install hook has installed the
@@ -219,7 +219,10 @@ def apt_get_install(packages=None):
     if packages is None:
         return(False)
     cmd_line = ['apt-get', '-y', 'install', '-qq']
-    cmd_line.extend(packages)
+    if isinstance(packages, list):
+        cmd_line.extend(packages)
+    else:
+        cmd_line.append(packages)
     return(subprocess.call(cmd_line))
 
 
@@ -341,14 +344,77 @@ def process_template(template_name, template_vars, destination):
     with open(destination, 'w') as inject_file:
         inject_file.write(str(template))
 
+def configure_and_install(rel):
+
+    def _import_key(id):
+        cmd = "apt-key adv --keyserver keyserver.ubuntu.com " \
+              "--recv-keys %s" % id
+        try:
+            subprocess.check_call(cmd.split(' '))
+        except:
+            juju_log(MSG_ERROR, "Error importing repo key %s" % id)
+
+    if rel == 'distro':
+        apt_get_install("python-django")
+    elif rel[:4] == "ppa:":
+        src = rel
+        subprocess.check_call(["add-apt-repository", "-y", src])
+
+        apt_get_install("python-django")
+    elif rel[:3] == "deb":
+        l = len(rel.split('|'))
+        if l ==  2:
+            src, key = rel.split('|')
+            juju_log("Importing PPA key from keyserver for %s" % src)
+            _import_key(key)
+        elif l == 1:
+            src = rel
+        else:
+            juju_log(MSG_ERROR, "Invalid django-release: %s" % rel)
+
+        with open('/etc/apt/sources.list.d/juju_deb.list', 'w') as f:
+            f.write(src)
+
+        apt_get_install("python-django")
+    elif rel == '':
+        pip_install('Django')
+    else:
+        pip_install(rel)
+#
+# from:
+#   http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
+#
+def which(program):
+    def is_exe(fpath):
+        return os.path.isfile(fpath) and os.access(fpath, os.X_OK)
+
+    for path in os.environ["PATH"].split(os.pathsep):
+        path = path.strip('"')
+        exe_file = os.path.join(path, program)
+        if is_exe(exe_file):
+            return exe_file
+
+    return False
+
+def find_django_admin_cmd():
+    for cmd in ['django-admin.py', 'django-admin']:
+        django_admin_cmd = which(cmd)
+        if django_admin_cmd:
+            return django_admin_cmd
+
+    juju_log(MSG_ERROR, "No django-admin executable found.")
+
 ###############################################################################
 # Hook functions
 ###############################################################################
 def install(run_pre=True):
-    packages = ["python-django", "python-imaging", "python-docutils", "python-tz",
+    packages = ["python-imaging", "python-docutils", "python-tz",
                 "python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
 
     apt_get_install(packages)
+    configure_and_install(django_version)
+
+    django_admin_cmd = find_django_admin_cmd()
             
     if extra_deb_pkgs:
         apt_get_install(extra_deb_pkgs.split(','))
@@ -385,17 +451,21 @@ def install(run_pre=True):
         run('svn co %s %s' % (repos_url, vcs_clone_dir))
     elif vcs == '' and repos_url == '':
         juju_log(MSG_INFO, "No version control using django-admin startproject")
-        cmd = 'django-admin startproject'
+        cmd = '%s startproject' % django_admin_cmd
         if project_template_url:
-            cmd = " ".join(cmd, '--template', project_template_url)
+            cmd = " ".join([cmd, '--template', project_template_url])
         if project_template_extension:
-            cmd = " ".join(cmd, '--extension', project_template_extension)
-        run('%s %s' % (cmd, working_dir))
+            cmd = " ".join([cmd, '--extension', project_template_extension])
+        run('%s %s %s' % (cmd, sanitized_unit_name, install_root))
         run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
         sys.exit(1)
 
+    install_dir(settings_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
+    install_dir(urls_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
+    install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
+    install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
 
     #FIXME: Upgrades/pulls will mess those files
     from jinja2 import Environment, FileSystemLoader
@@ -403,12 +473,21 @@ def install(run_pre=True):
         loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
         'templates')))
 
-    for dir, path in ((settings_py_path, 'juju_settings'), (urls_py_path, 'juju_urls')):
+    for path, dir in ((settings_py_path, 'juju_settings'), (urls_py_path, 'juju_urls')):
         template = \
             template_env.get_template('conf_injection.tmpl').render({'dir': dir})
 
-        with open(path, 'a') as inject_file:
-            if not str(template) in inject_file:
+
+        append = False
+        if os.path.exists(path):
+            with open(path, 'r') as inject_file:
+                if not str(template) in inject_file:
+                    append = True
+        else:
+            append = True
+
+        if append == True:
+            with open(path, 'a') as inject_file:
                 inject_file.write(INJECTED_WARNING)
                 inject_file.write(str(template))
 
@@ -416,13 +495,11 @@ def install(run_pre=True):
        for req_file in requirements_pip_files.split(','):
             pip_install_req(os.path.join(working_dir,req_file))
 
-    install_dir(settings_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(urls_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
-
 def config_changed(config_data):
+    os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
+    django_admin_cmd = find_django_admin_cmd()
+
+    site_secret_key = config_data['site_secret_key']
     if not site_secret_key:
         site_secret_key = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
 
@@ -441,21 +518,33 @@ def config_changed(config_data):
     with open(settings_secret_path, 'w') as inject_file:
         inject_file.write(str(template))
 
-    run("%s collectstatic --noinput || true" % manage_path)
+    run("%s collectstatic --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def django_settings_relation_joined_changed():
+    os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
+    django_admin_cmd = find_django_admin_cmd()
     relation_set({'settings_dir_path': settings_dir_path,
                   'urls_dir_path': urls_dir_path,
                  })
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
+
+    run("%s syndb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
+    run("%s collectstatic --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
 def django_settings_relation_broken():
     pass
 
 def pgsql_relation_joined_changed():
+    os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
+    django_admin_cmd = find_django_admin_cmd()
+
     packages = ["python-psycopg2", "postgresql-client"]
     apt_get_install(packages)
 
@@ -482,7 +571,7 @@ def pgsql_relation_joined_changed():
     with open(settings_database_path, 'w') as inject_file:
         inject_file.write(str(template))
 
-    run("%s syncdb --noinput || true" % manage_path)
+    run("%s syncdb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
 def pgsql_relation_broken():
     pass
@@ -518,8 +607,11 @@ def wsgi_relation_joined_changed():
     relation_set({'working_dir':working_dir})
 
     for var in config_data:
-        if var.startswith('wsgi_') or var in ['env_extra', 'django_settings', 'python_path', 'port']:
+        if var.startswith('wsgi_') or var in ['env_extra', 'django_settings', 'port']:
             relation_set({var: config_data[var]})
+    
+    if not config_data['python_path']:
+        relation_set({'python_path': install_root})
 
 # def website_relation_joined_changed():
 #if [ -e /etc/gunicorn.d/${unit_name}.conf ]; then
@@ -537,7 +629,9 @@ def wsgi_relation_joined_changed():
 # Global variables
 ###############################################################################
 config_data = config_get()
+juju_log(MSG_DEBUG, "got config: %s" % str(config_data))
 
+django_version = config_data['django_version']
 vcs = config_data['vcs']
 repos_url = config_data['repos_url']
 repos_username = config_data['repos_username']
@@ -550,19 +644,19 @@ project_template_url = config_data['project_template_url']
 extra_deb_pkgs = config_data['additional_distro_packages']
 extra_pip_pkgs = config_data['additional_pip_packages']
 requirements_pip_files = config_data['requirements_pip_files']
-site_secret_key = config_data['site_secret_key']
 wsgi_user = config_data['wsgi_user']
 wsgi_group = config_data['wsgi_group']
 install_root = config_data['install_root']
 application_path = config_data['application_path']
 
 unit_name = os.environ['JUJU_UNIT_NAME'].split('/')[0]
-vcs_clone_dir = os.path.join(install_root, unit_name)
+sanitized_unit_name = sanitize(unit_name)
+vcs_clone_dir = os.path.join(install_root, sanitize(unit_name))
 if application_path:
     working_dir = os.path.join(vcs_clone_dir, application_path)
 else:
     working_dir = vcs_clone_dir
-manage_path = os.path.join(working_dir, 'manage.py')
+
 django_run_dir = os.path.join(working_dir, "run/")
 django_logs_dir = os.path.join(working_dir, "logs/")
 settings_py_path = os.path.join(working_dir, 'settings.py')
