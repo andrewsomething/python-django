@@ -17,13 +17,6 @@ INJECTED_WARNING = """
 #------------------------------------------------------------------------------
 """
 
-# jinja2 may not be importable until the install hook has installed the
-# required packages.
-def Template(*args, **kw):
-    from jinja2 import Template
-    return Template(*args, **kw)
-
-
 ###############################################################################
 # Supporting functions
 ###############################################################################
@@ -46,7 +39,7 @@ def run(command, exit_on_error=True, cwd=None):
         return subprocess.check_output(
             command, stderr=subprocess.STDOUT, shell=True, cwd=cwd)
     except subprocess.CalledProcessError, e:
-        juju_log(MSG_ERROR, "status=%d, output=%s" % (e.returncode, e.output))
+        #juju_log(MSG_ERROR, "status=%d, output=%s" % (e.returncode, e.output))
         if exit_on_error:
             sys.exit(e.returncode)
         else:
@@ -404,6 +397,39 @@ def find_django_admin_cmd():
 
     juju_log(MSG_ERROR, "No django-admin executable found.")
 
+#FIXME duplicate with process_template()
+def render_template(template_name, template_vars, path, try_append=False):
+
+    # --- exported service configuration file
+    from jinja2 import Environment, FileSystemLoader
+    template_env = Environment(
+        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
+        'templates')))
+
+    template = \
+        template_env.get_template(template_name).render(template_vars)
+
+    if try_append:
+        append = False
+        if os.path.exists(path):
+            with open(path, 'r') as inject_file:
+                if not str(template) in inject_file:
+                    append = True
+        else:       
+            append = True
+            
+        if append == True:
+            with open(path, 'a') as inject_file:
+                inject_file.write(INJECTED_WARNING)
+                inject_file.write(str(template))
+
+    else:
+
+        with open(path, 'w') as inject_file:
+            inject_file.write(INJECTED_WARNING)
+            inject_file.write(str(template))
+
+
 ###############################################################################
 # Hook functions
 ###############################################################################
@@ -455,7 +481,11 @@ def install(run_pre=True):
             cmd = " ".join([cmd, '--template', project_template_url])
         if project_template_extension:
             cmd = " ".join([cmd, '--extension', project_template_extension])
-        run('%s %s' % (cmd, sanitized_unit_name), cwd=install_root)
+        try:
+            run('%s %s %s' % (cmd, sanitized_unit_name, install_root), exit_on_error=False)
+        except subprocess.CalledProcessError:
+            run('%s %s' % (cmd, sanitized_unit_name), cwd=install_root)
+
         run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
@@ -467,28 +497,9 @@ def install(run_pre=True):
     install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
 
     #FIXME: Upgrades/pulls will mess those files
-    from jinja2 import Environment, FileSystemLoader
-    template_env = Environment(
-        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
-        'templates')))
 
     for path, dir in ((settings_py_path, 'juju_settings'), (urls_py_path, 'juju_urls')):
-        template = \
-            template_env.get_template('conf_injection.tmpl').render({'dir': dir})
-
-
-        append = False
-        if os.path.exists(path):
-            with open(path, 'r') as inject_file:
-                if not str(template) in inject_file:
-                    append = True
-        else:
-            append = True
-
-        if append == True:
-            with open(path, 'a') as inject_file:
-                inject_file.write(INJECTED_WARNING)
-                inject_file.write(str(template))
+        render_template('conf_injection.tmpl', {'dir': dir}, path, try_append=True)
 
     if requirements_pip_files:
        for req_file in requirements_pip_files.split(','):
@@ -502,20 +513,7 @@ def config_changed(config_data):
     if not site_secret_key:
         site_secret_key = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
 
-    # --- exported service configuration file
-    from jinja2 import Environment, FileSystemLoader
-    template_env = Environment(
-        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
-        'templates')))
-    templ_vars = {
-       'site_secret_key': site_secret_key,
-    }
-
-    template = \
-        template_env.get_template('secret.tmpl').render(templ_vars)
-
-    with open(settings_secret_path, 'w') as inject_file:
-        inject_file.write(str(template))
+    render_template('secret.tmpl', {'site_secret_key': site_secret_key}, settings_secret_path)
 
     run("%s collectstatic --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
@@ -526,16 +524,17 @@ def config_changed(config_data):
 def django_settings_relation_joined_changed():
     os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
     django_admin_cmd = find_django_admin_cmd()
+
     relation_set({'settings_dir_path': settings_dir_path,
                   'urls_dir_path': urls_dir_path,
+                  'install_root': install_root,
+                  'django_admin_cmd': django_admin_cmd,
                  })
 
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
-    run("%s syndb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
-    run("%s collectstatic --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
 def django_settings_relation_broken():
     pass
@@ -551,11 +550,6 @@ def pgsql_relation_joined_changed():
     if not database:
         return
 
-    # --- exported service configuration file
-    from jinja2 import Environment, FileSystemLoader
-    template_env = Environment(
-        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
-        'templates')))
     templ_vars = {
        'db_engine': 'django.db.backends.postgresql_psycopg2',
        'db_database': database,
@@ -564,11 +558,7 @@ def pgsql_relation_joined_changed():
        'db_host': relation_get("host"),
     }
 
-    template = \
-        template_env.get_template('engine.tmpl').render(templ_vars)
-
-    with open(settings_database_path, 'w') as inject_file:
-        inject_file.write(str(template))
+    render_template('engine.tmpl', templ_vars, settings_database_path)
 
     run("%s syncdb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
@@ -583,21 +573,13 @@ def mongodb_relation_joined_changed():
     if not database:
         return
 
-    # --- exported service configuration file
-    from jinja2 import Environment, FileSystemLoader
-    template_env = Environment(
-        loader=FileSystemLoader(os.path.join(os.environ['CHARM_DIR'],
-        'templates')))
     templ_vars = {
        'db_database': database,
        'db_host': relation_get("host"),
     }
 
-    template = \
-        template_env.get_template('mongodb_engine.tmpl').render(templ_vars)
-
-    with open(settings_database_path, 'w') as inject_file:
-        inject_file.write(str(template))
+    # FIXME
+    render_template('mongodb_engine.tmpl', templ_vars, settings_database_path.replace('engine', 'engine-mongo'))
 
 def mongodb_relation_broken():
     pass
