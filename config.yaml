@@ -128,8 +128,8 @@ options:
         description: "The name of the WSGI application."
     wsgi_workers:
         type: int
-        default: 2
-        description: "The number of worker process for handling requests."
+        default: 0
+        description: "The number of worker process for handling requests. 0 for cpu + 1"
     wsgi_worker_class:
         type: string
         default: "sync"
