@@ -515,8 +515,6 @@ def config_changed(config_data):
 
     render_template('secret.tmpl', {'site_secret_key': site_secret_key}, settings_secret_path)
 
-    run("%s collectstatic --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
-
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
