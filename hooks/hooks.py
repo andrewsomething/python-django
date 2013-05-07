@@ -397,8 +397,7 @@ def find_django_admin_cmd():
 
     juju_log(MSG_ERROR, "No django-admin executable found.")
 
-#FIXME duplicate with process_template()
-def render_template(template_name, template_vars, path, try_append=False):
+def append_template(template_name, template_vars, path, try_append=False):
 
     # --- exported service configuration file
     from jinja2 import Environment, FileSystemLoader
@@ -409,25 +408,19 @@ def render_template(template_name, template_vars, path, try_append=False):
     template = \
         template_env.get_template(template_name).render(template_vars)
 
-    if try_append:
-        append = False
-        if os.path.exists(path):
-            with open(path, 'r') as inject_file:
-                if not str(template) in inject_file:
-                    append = True
-        else:       
-            append = True
-            
-        if append == True:
-            with open(path, 'a') as inject_file:
-                inject_file.write(INJECTED_WARNING)
-                inject_file.write(str(template))
-
-    else:
-
-        with open(path, 'w') as inject_file:
+    append = False
+    if os.path.exists(path):
+        with open(path, 'r') as inject_file:
+            if not str(template) in inject_file:
+                append = True
+    else:       
+        append = True
+        
+    if append == True:
+        with open(path, 'a') as inject_file:
             inject_file.write(INJECTED_WARNING)
             inject_file.write(str(template))
+
 
 
 ###############################################################################
@@ -499,7 +492,7 @@ def install(run_pre=True):
     #FIXME: Upgrades/pulls will mess those files
 
     for path, dir in ((settings_py_path, 'juju_settings'), (urls_py_path, 'juju_urls')):
-        render_template('conf_injection.tmpl', {'dir': dir}, path, try_append=True)
+        append_template('conf_injection.tmpl', {'dir': dir}, path)
 
     if requirements_pip_files:
        for req_file in requirements_pip_files.split(','):
@@ -513,7 +506,7 @@ def config_changed(config_data):
     if not site_secret_key:
         site_secret_key = ''.join([choice('abcdefghijklmnopqrstuvwxyz0123456789!@#$%^&*(-_=+)') for i in range(50)])
 
-    render_template('secret.tmpl', {'site_secret_key': site_secret_key}, settings_secret_path)
+    process_template('secret.tmpl', {'site_secret_key': site_secret_key}, settings_secret_path)
 
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
@@ -556,7 +549,7 @@ def pgsql_relation_joined_changed():
        'db_host': relation_get("host"),
     }
 
-    render_template('engine.tmpl', templ_vars, settings_database_path)
+    process_template('engine.tmpl', templ_vars, settings_database_path)
 
     run("%s syncdb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
@@ -577,7 +570,7 @@ def mongodb_relation_joined_changed():
     }
 
     # FIXME
-    render_template('mongodb_engine.tmpl', templ_vars, settings_database_path.replace('engine', 'engine-mongo'))
+    process_template('mongodb_engine.tmpl', templ_vars, settings_database_path.replace('engine', 'engine-mongo'))
 
 def mongodb_relation_broken():
     pass
