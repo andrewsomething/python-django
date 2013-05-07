@@ -113,7 +113,7 @@ options:
           Set the variable to an empty string if you don't want the feature.
     settings_database_path:
         type: string
-        default: "juju_settings/20-engine.py"
+        default: "juju_settings/20-engine-%(engine_name)s.py"
         description: |
           The place where the database configuration will be appended or written.
           Set the variable to an empty string if you don't want the feature.

@@ -17,6 +17,7 @@ INJECTED_WARNING = """
 #------------------------------------------------------------------------------
 """
 
+
 ###############################################################################
 # Supporting functions
 ###############################################################################
@@ -549,7 +550,7 @@ def pgsql_relation_joined_changed():
        'db_host': relation_get("host"),
     }
 
-    process_template('engine.tmpl', templ_vars, settings_database_path)
+    process_template('engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'pgsql'})
 
     run("%s syncdb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
 
@@ -569,8 +570,7 @@ def mongodb_relation_joined_changed():
        'db_host': relation_get("host"),
     }
 
-    # FIXME
-    process_template('mongodb_engine.tmpl', templ_vars, settings_database_path.replace('engine', 'engine-mongo'))
+    process_template('mongodb_engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'mongodb'})
 
 def mongodb_relation_broken():
     pass
