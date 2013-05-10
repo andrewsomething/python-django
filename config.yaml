@@ -125,7 +125,8 @@ options:
           Set the variable to an empty string if you don't want the feature.
     wsgi_wsgi_file:
         type: string
-        description: "The name of the WSGI application."
+        default: ""
+        description: "The name of the WSGI application. Leave it empty for {{project_name}}.wsgi"
     wsgi_workers:
         type: int
         default: 0
