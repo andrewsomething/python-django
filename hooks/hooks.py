@@ -226,7 +226,11 @@ def apt_get_install(packages=None):
 def pip_install(packages=None):
     if packages is None:
         return(False)
-    cmd_line = ['pip', 'install']
+    if packages.startswith('svn+') or packages.startswith('git+') or \
+       packages.startswith('hg+') or packages.startswith('bzr+'):
+        cmd_line = ['pip', 'install', '-e']
+    else:
+        cmd_line = ['pip', 'install']
     cmd_line.append(packages)
     return(subprocess.call(cmd_line))
 
@@ -430,7 +434,12 @@ def append_template(template_name, template_vars, path, try_append=False):
 def install(run_pre=True):
     packages = ["python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
 
-    apt_get_install(packages)
+    for retry in xrange(0,24):
+        if apt_get_install(packages):
+            time.sleep(10)
+        else:
+            break
+
     configure_and_install(django_version)
 
     django_admin_cmd = find_django_admin_cmd()
@@ -552,7 +561,7 @@ def pgsql_relation_joined_changed():
 
     process_template('engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'pgsql'})
 
-    run("%s syncdb --noinput --pythonpath=%s || true" % (django_admin_cmd, install_root))
+    run("%s syncdb --noinput --pythonpath=%s --settings=%s.settings || true" % (django_admin_cmd, install_root, unit_name))
 
 def pgsql_relation_broken():
     pass
