@@ -11,6 +11,8 @@ from pwd import getpwnam
 from grp import getgrnam
 from random import choice
 
+CHARM_PACKAGES = ["python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
+
 INJECTED_WARNING = """
 #------------------------------------------------------------------------------
 # The following is the import code for the settings directory injected by Juju
@@ -205,6 +207,10 @@ def relation_get_all(*args, **kwargs):
                 relation_data.append(unit_data)
     return relation_data
 
+def apt_get_update():
+    cmd_line = ['apt-get', 'update']
+    return(subprocess.call(cmd_line))
+
 
 #------------------------------------------------------------------------------
 # apt_get_install( packages ):  Installs package(s)
@@ -223,24 +229,28 @@ def apt_get_install(packages=None):
 #------------------------------------------------------------------------------
 # pip_install( package ):  Installs a python package
 #------------------------------------------------------------------------------
-def pip_install(packages=None):
+def pip_install(packages=None, upgrade=False):
+    cmd_line = ['pip', 'install']
     if packages is None:
         return(False)
+    if upgrade:
+        cmd_line.append('-u')
     if packages.startswith('svn+') or packages.startswith('git+') or \
        packages.startswith('hg+') or packages.startswith('bzr+'):
-        cmd_line = ['pip', 'install', '-e']
-    else:
-        cmd_line = ['pip', 'install']
+        cmd_line.append('-e')
     cmd_line.append(packages)
     return(subprocess.call(cmd_line))
 
 #------------------------------------------------------------------------------
 # pip_install_req( path ):  Installs a requirements file
 #------------------------------------------------------------------------------
-def pip_install_req(path=None):
+def pip_install_req(path=None, upgrade=False):
+    cmd_line = ['pip', 'install']
     if path is None:
         return(False)
-    cmd_line = ['pip', 'install', '-r']
+    if upgrade:
+        cmd_line.append('-u')
+    cmd_line.append('-r')
     cmd_line.append(path)
     cwd = os.path.dirname(path)
     return(subprocess.call(cmd_line, cwd=cwd))
@@ -431,11 +441,10 @@ def append_template(template_name, template_vars, path, try_append=False):
 ###############################################################################
 # Hook functions
 ###############################################################################
-def install(run_pre=True):
-    packages = ["python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
+def install():
 
     for retry in xrange(0,24):
-        if apt_get_install(packages):
+        if apt_get_install(CHARM_PACKAGES):
             time.sleep(10)
         else:
             break
@@ -489,10 +498,11 @@ def install(run_pre=True):
         except subprocess.CalledProcessError:
             run('%s %s' % (cmd, sanitized_unit_name), cwd=install_root)
 
-        run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
     else:
         juju_log(MSG_ERROR, "Unknown version control")
         sys.exit(1)
+
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
 
     install_dir(settings_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
     install_dir(urls_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
@@ -521,6 +531,47 @@ def config_changed(config_data):
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
+
+def upgrade():
+    if extra_pip_pkgs:
+        for package in extra_pip_pkgs.split(','):
+            pip_install(package, upgrade=True)
+
+    apt_get_update()
+    for retry in xrange(0,24):
+        if apt_get_install(CHARM_PACKAGES):
+            time.sleep(10)
+        else:
+            break
+
+    if vcs == 'hg' or vcs == 'mercurial':
+        run('hg pull %s %s' % (repos_url, vcs_clone_dir))
+    elif vcs == 'git' or vcs == 'git-core':
+        if repos_branch:
+            run('git pull %s -b %s %s' % (repos_url, repos_branch, vcs_clone_dir))
+        else:
+            run('git pull %s %s' % (repos_url, vcs_clone_dir))
+    elif vcs == 'bzr' or vcs == 'bazaar':
+        run('bzr pull %s %s' % (repos_url, vcs_clone_dir))
+    elif vcs == 'svn' or vcs == 'subversion':
+        run('svn up %s %s' % (repos_url, vcs_clone_dir))
+    else:
+        juju_log(MSG_ERROR, "Unknown version control")
+        sys.exit(1)
+
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
+
+    if requirements_pip_files:
+       for req_file in requirements_pip_files.split(','):
+            pip_install_req(os.path.join(working_dir,req_file), upgrade=True)
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+       relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
+
+    for relid in relation_ids('django-settings'):
+       relation_set({'django_settings_timestamp': time.time()}, relation_id=relid)
+    
 
 def django_settings_relation_joined_changed():
     os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
@@ -660,7 +711,7 @@ def main():
        config_changed(config_data)
 
     elif hook_name == "upgrade-charm":
-        install(run_pre=False)
+        upgrade()
         config_changed(config_data)
 
     elif hook_name in ["django-settings-relation-joined", "django-settings-relation-changed"]:
