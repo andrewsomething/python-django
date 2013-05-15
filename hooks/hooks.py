@@ -536,7 +536,6 @@ def django_settings_relation_joined_changed():
     for relid in relation_ids('wsgi'):
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
-
 def django_settings_relation_broken():
     pass
 
@@ -594,17 +593,18 @@ def wsgi_relation_joined_changed():
     if not config_data['python_path']:
         relation_set({'python_path': install_root})
 
-# def website_relation_joined_changed():
-#if [ -e /etc/gunicorn.d/${unit_name}.conf ]; then
-#
-#   bind_line=$(grep "bind=0.0.0.0:" /etc/gunicorn.d/${unit_name}.conf)
-#       PORT=$(echo ${bind_line} | grep -o ":[0-9]*" | sed -e "s/://")
-#
-#            juju-log "PORT=${PORT}"
-#
-#                relation-set port="${PORT}" hostname=`unit-get private-address`
-#
+def wsgi_relation_broken():
+    pass
 
+def website_relation_joined_changed():
+    gunicorn_file = "/etc/gunicorn.d/%s.conf" % unit_name
+    if os.path.exists(gunicorn_file):
+        bind_line = run('grep "bind=0.0.0.0:" %s' % gunicorn_file)
+        port = run('echo %s | grep -o ":[0-9]*" | sed -e "s/://"' % bind_line)
+        relation_set({'port': port, 'hostname': get_unit_host()})
+
+def website_relation_broken():
+    pass
 
 ###############################################################################
 # Global variables
@@ -689,6 +689,16 @@ def main():
 
     elif hook_name in ["wsgi-relation-joined", "wsgi-relation-changed"]:
         wsgi_relation_joined_changed()
+
+    elif hook_name == "wsgi-relation-broken":
+        wsgi_relation_broken()
+
+    elif hook_name in ["website-relation-joined", "website-relation-changed"]:
+        website_relation_joined_changed()
+
+    elif hook_name == "website-relation-broken":
+        website_relation_broken()
+
 
     else:
         print "Unknown hook {}".format(hook_name)
