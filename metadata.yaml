@@ -2,19 +2,12 @@ name: python-django
 summary: High-level Python web development framework
 maintainer: Patrick Hetu <patrick.hetu@gmail.com>
 description: |
-  Django is a high-level web application framework that loosely follows
-  the model-view-controller design pattern.  Python's equivalent to Ruby
-  on Rails, Django lets you build complex data-driven websites quickly
-  and easily - Django focuses on automating as much as possible and
-  adhering to the "Don't Repeat Yourself" (DRY) principle.  Django
-  additionally emphasizes reusability and "pluggability" of components;
-  many generic third-party "applications" are available to enhance
-  projects or to simply to reduce development time even further.
-  Notable features include: * An object-relational mapper (ORM) *
-  Automatic admin interface * Elegant URL dispatcher * Form
-  serialization and validation system * Templating system * Lightweight,
-  standalone web server for development and testing *
-  Internationalization support * Testing framework and client
+  This charm will install Django. It can also install your Django
+  project and his dependencies from either a template or from a
+  version control system.
+  It can also link your project to a database and sync the schemas.
+  This charm also come with a Fabric fabfile to interact with the
+  deployement in a cloud aware manner.
 provides:
   website:
     interface: http
