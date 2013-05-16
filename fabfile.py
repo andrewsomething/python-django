@@ -34,19 +34,21 @@ for service in services.items():
     for unit in units.items():
         if 'public-address' in unit[1].keys():
             env.roledefs.setdefault(service[0], []).append(unit[1]['public-address'])
+            env.roledefs.setdefault(unit[0], []).append(unit[1]['public-address'])
 
 # helpers
+def _config_get(role):
+    conf = yaml.safe_load(Popen('./juju get %s' % (role), stdout=PIPE).stdout)
+    return {k : v['value'] for k,v in conf['setting'].iteritems()}
 
-def _config_get():
-    conf = Popen('jitsu run-as-hook %s/0 config-get' % (env.roles[0]),shell=True, stdout=PIPE).stdout
-    return eval(conf.read())
-
-def _relation_get(relation, relation_type):
-    res = Popen('jitsu run-as-hook %s/0 relation-ids %s' % (env.roles[0], relation_type),shell=True, stdout=PIPE).stdout
-    rel_id = res.read().strip()
-
-    conf = Popen('jitsu run-as-hook %s/0 relation-get -r %s' % (relation, rel_id),shell=True, stdout=PIPE).stdout
-    return eval(conf.read())
+def _find_django_admin_cmd():
+    for cmd in ['django-admin.py', 'django-admin']:
+        remote_environ = run('echo $PATH')
+        for path in remote_environ.split(':'):
+            path = path.strip('"')
+            path = os.path.join(path, cmd)
+            if files.exists(path):
+                return path
 
 
 # Debian
@@ -64,18 +66,26 @@ def apt_dist_upgrade():
 
 @task
 def apt_install_r():
-    sudo("apt-get install -y $(cat requirements.apt | tr '\\n' ' '")
+    conf = _config_get(env.roles[0])
+    project_dir = os.path.join(conf['install_root'], env.roles[0])
+    with cd(project_dir):
+        for req_file in conf['requirements_apt_files'].split(','):
+            sudo("apt-get install -y $(cat %s | tr '\\n' ' '" % req_file)
 
+# Python
 @task
 def pip_install(packages):
     sudo("pip install %s" % packages)
 
 @task
 def pip_install_r():
-    sudo("pip install -r requirements.txt")
+    conf = _config_get(env.roles[0])
+    project_dir = os.path.join(conf['install_root'], env.roles[0])
+    with cd(project_dir):
+        for req_file in conf['requirements_pip_files'].split(','):
+            sudo("pip install -r %s" % req_file)
 
 # Users
-
 @task
 def adduser(username):
     sudo('adduser %s --disabled-password --gecos ""' % username)
@@ -98,8 +108,9 @@ def ssh_add_key(pub_key_file, username=None):
 
 @task
 def pull():
-    conf = _config_get()
-    with cd('/srv/%s/' % env.roles[0]):
+    conf = _config_get(env.roles[0])
+    project_dir = os.path.join(conf['install_root'], env.roles[0])
+    with cd(project_dir):
         if conf['vcs'] is 'bzr':
             run('bzr pull %s' % conf['repos_url'])
         if conf['vcs'] is 'git':
@@ -114,22 +125,22 @@ def pull():
 
 
 # Gunicorn
-
 @task
 def reload():
     sudo('invoke-rc.d gunicorn reload')
 
 
 # Django
-
 @task
 def manage(command):
-    run('python manage.py ' + command)
+    conf = _config_get(env.roles[0])
+    project_dir = os.path.join(conf['install_root'], env.roles[0])
+    django_admin_cmd = _find_django_admin_cmd()
+    run('%s %s --pythonpath=%s --settings=%s' % \
+      (django_admin_cmd, command, conf['install_root'], env.roles[0] + 'settings'))
 
 @task
-def migrate(params='', do_backup=True):
-    if do_backup is True:
-        db_backup('before-migrate')
+def migrate(params=''):
     manage('migrate --noinput %s' % params)
 
 @task
@@ -141,48 +152,13 @@ def syncdb(params=''):
 def collectstatic(params=''):
     manage('collectstatic --noinput %s' % params)
 
-
-# DB
-
-def _get_dump_filename(backup_dir):
-    now = datetime.now().strftime('%Y.%m.%d-%H.%M')
-    filename = '%s%s.sql' % (backup_dir, now)
-    return filename
-
-@task
-def db_list():
-    run('find /srv/%s/backups/ -name *.gz' % env.roles[0])
-
-@task
-def db_backup(name):
-    backup_dir = '/srv/%s/backups/%s/' % (env.roles[0], name)
-    run('mkdir -p ' + backup_dir)
-
-    conf = _relation_get('postgresql', 'db')
-    conf['filename'] = _get_dump_filename(backup_dir)
-
-    if 'port' not in conf.keys(): conf['port'] = '5432'
-
-    cmd = 'PGPASSWORD="%(password)s" pg_dump --username=%(user)s --host=%(host)s --port=%(port)s %(database)s | gzip -3 > %(filename)s.gz' % conf
-    run(cmd)
-
-@task
-def db_restore(name):
-    backup_file = '/srv/%s/backups/%s' % (env.roles[0], name) 
-
-    conf = _relation_get('postgresql', 'db')
-    conf['filename'] = backup_file
-
-    if 'port' not in conf.keys(): conf['port'] = '5432'
-
-    cmd = 'gunzip -c %(filename)s | PGPASSWORD="%(password)s" psql --username=%(user)s --host=%(host)s --port=%(port)s %(database)s' % conf
-    run(cmd)
-
-
 # Utils
-
 @task
 def delete_pyc():
     """ Deletes *.pyc files from project source dir """
-    run("find . -name '*.pyc' -delete")
+
+    conf = _config_get(env.roles[0])
+    project_dir = os.path.join(conf['install_root'], env.roles[0])
+    with project_dir:
+        run("find . -name '*.pyc' -delete")
  
