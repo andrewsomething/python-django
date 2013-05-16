@@ -506,8 +506,6 @@ def install():
 
     install_dir(settings_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
     install_dir(urls_dir_path, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(django_run_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
-    install_dir(django_logs_dir, owner=wsgi_user, group=wsgi_group, mode=0755)
 
     #FIXME: Upgrades/pulls will mess those files
 
