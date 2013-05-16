@@ -25,11 +25,15 @@ options:
     repos_username:
         type: string
         default: ""
-        description: The vcs user name.
+        description: |
+            The vcs user name.
+            Note: *Subversion only* settings. For other vcs use the repos_url for auth.
     repos_password:
         type: string
         default: ""
-        description: The vcs password.
+        description: |
+            The vcs password.
+            Note: *Subversion only* settings. For other vcs use the repos_url for auth.
     repos_branch:
         type: string
         default: ""
@@ -169,7 +173,7 @@ options:
         description: "Switch worker process to run as this group. A valid group id (as an int) or the name."
     wsgi_log_file:
         type: string
-        default: "-"
+        default: ""
         description: "The log file to write to. If empty the file would be <your_application_dir>/gunicorn.log"
     wsgi_log_level:
         type: string
@@ -177,7 +181,7 @@ options:
         description: "The granularity of Error log outputs."
     wsgi_access_logfile:
         type: string
-        default: "-"
+        default: ""
         description: "The Access log file to write to."
     wsgi_access_logformat:
         type: string
