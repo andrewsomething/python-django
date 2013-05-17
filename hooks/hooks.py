@@ -609,7 +609,7 @@ def pgsql_relation_joined_changed():
 
     process_template('engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'pgsql'})
 
-    run("%s syncdb --noinput --pythonpath=%s --settings=%s.settings || true" % (django_admin_cmd, install_root, unit_name))
+    run("%s syncdb --noinput --pythonpath=%s --settings=%s.settings || true" % (django_admin_cmd, install_root, sanitized_unit_name))
 
 def pgsql_relation_broken():
     pass
@@ -646,7 +646,7 @@ def wsgi_relation_broken():
     pass
 
 def website_relation_joined_changed():
-    gunicorn_file = "/etc/gunicorn.d/%s.conf" % unit_name
+    gunicorn_file = "/etc/gunicorn.d/%s.conf" % sanitized_unit_name
     if os.path.exists(gunicorn_file):
         bind_line = run('grep "bind=0.0.0.0:" %s' % gunicorn_file)
         port = run('echo %s | grep -o ":[0-9]*" | sed -e "s/://"' % bind_line)
@@ -681,7 +681,7 @@ application_path = config_data['application_path']
 
 unit_name = os.environ['JUJU_UNIT_NAME'].split('/')[0]
 sanitized_unit_name = sanitize(unit_name)
-vcs_clone_dir = os.path.join(install_root, sanitize(unit_name))
+vcs_clone_dir = os.path.join(install_root, sanitized_unit_name)
 if application_path:
     working_dir = os.path.join(vcs_clone_dir, application_path)
 else:
