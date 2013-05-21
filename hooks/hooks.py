@@ -42,7 +42,7 @@ def run(command, exit_on_error=True, cwd=None):
         return subprocess.check_output(
             command, stderr=subprocess.STDOUT, shell=True, cwd=cwd)
     except subprocess.CalledProcessError, e:
-        #juju_log(MSG_ERROR, "status=%d, output=%s" % (e.returncode, e.output))
+        juju_log(MSG_ERROR, "status=%d, output=%s" % (e.returncode, e.output))
         if exit_on_error:
             sys.exit(e.returncode)
         else:
@@ -234,11 +234,12 @@ def pip_install(packages=None, upgrade=False):
     if packages is None:
         return(False)
     if upgrade:
-        cmd_line.append('-u')
+        cmd_line.append('--upgrade')
     if packages.startswith('svn+') or packages.startswith('git+') or \
        packages.startswith('hg+') or packages.startswith('bzr+'):
         cmd_line.append('-e')
     cmd_line.append(packages)
+    cmd_line.append('--use-mirrors')
     return(subprocess.call(cmd_line))
 
 #------------------------------------------------------------------------------
@@ -249,10 +250,11 @@ def pip_install_req(path=None, upgrade=False):
     if path is None:
         return(False)
     if upgrade:
-        cmd_line.append('-u')
+        cmd_line.append('--upgrade')
     cmd_line.append('-r')
     cmd_line.append(path)
     cwd = os.path.dirname(path)
+    cmd_line.append('--use-mirrors')
     return(subprocess.call(cmd_line, cwd=cwd))
 
 #------------------------------------------------------------------------------
@@ -363,12 +365,12 @@ def configure_and_install(rel):
             juju_log(MSG_ERROR, "Error importing repo key %s" % id)
 
     if rel == 'distro':
-        apt_get_install("python-django")
+        return apt_get_install("python-django")
     elif rel[:4] == "ppa:":
         src = rel
         subprocess.check_call(["add-apt-repository", "-y", src])
 
-        apt_get_install("python-django")
+        return apt_get_install("python-django")
     elif rel[:3] == "deb":
         l = len(rel.split('|'))
         if l ==  2:
@@ -380,14 +382,15 @@ def configure_and_install(rel):
         else:
             juju_log(MSG_ERROR, "Invalid django-release: %s" % rel)
 
-        with open('/etc/apt/sources.list.d/juju_deb.list', 'w') as f:
+        with open('/etc/apt/sources.list.d/juju_python_django_deb.list', 'w') as f:
             f.write(src)
 
-        apt_get_install("python-django")
+        return apt_get_install("python-django")
     elif rel == '':
-        pip_install('Django')
+        return pip_install('Django')
     else:
-        pip_install(rel)
+        return pip_install(rel)
+
 #
 # from:
 #   http://stackoverflow.com/questions/377017/test-if-executable-exists-in-python
