@@ -3,8 +3,8 @@ Juju charm python-django
 
 :Author: Patrick Hetu <patrick@koumbit.org> and Bruno Girin
 
-Overview
---------
+What is Django?
+...............
 
 Django is a high-level web application framework that loosely follows
 the model-view-controller design pattern.  Python's equivalent to Ruby
@@ -24,6 +24,17 @@ Notable features include:
 * Templating system
 * Lightweight, standalone web server for development and testing
 * Internationalization support * Testing framework and client
+
+The charm
+---------
+
+This charm will install Django. It can also install your Django
+project and his dependencies from either a template or from a
+version control system.
+
+It can also link your project to a database and sync the schemas.
+This charm also come with a Fabric fabfile to interact with the
+deployement in a cloud aware manner.
 
 
 Quick start
@@ -45,65 +56,56 @@ In a couple of minute, your new (vanilla) Django site should be ready at
 the public address of gunicorn. You can find it in the output of the
 `juju status` command.  
 
-This is roughtly equivalent to the `Creating a project` step in Django's
-tutorial there:
+This is roughtly equivalent to the `Creating a project`_ step in Django's
+tutorial.
 
-  https://docs.djangoproject.com/en/1.5/intro/tutorial01/#creating-a-project
-
-Customising the deployment
----------------------------
-
-To customise the deployment, you need to create a configuration file
-written in the YAML language.
-
-Relations
----------
+.. _`Creating a project`: https://docs.djangoproject.com/en/1.5/intro/tutorial01/#creating-a-project
 
 Example: Deploying using site a template
 ----------------------------------------
 
-Setup your Django specific parameters in my_django_site.yaml like this one::
+Setup your Django specific parameters in mydjangosite.yaml like this one::
 
-    my_django_site:
+    mydjangosite:
          project_template_url: https://github.com/xenith/django-base-template/zipball/master
          project_template_extension: py,md,rst
 
 Note: 
 
     If your using juju-core you must remove the first line
-    of the file and indent the rest according to that.
+    of the file and the indentation for the rest of the file.
 
 2. Deployment with `Gunicorn`::
 
     juju bootstrap
-    juju deploy --config my_django_site.yaml my_django_site
+    juju deploy --config mydjangosite.yaml mydjangosite
 
     juju deploy postgresql
-    juju add-relation my_django_site postgresql:db
+    juju add-relation mydjangosite postgresql:db
 
     juju deploy gunicorn
-    juju add-relation my_django_site gunicorn
+    juju add-relation mydjangosite gunicorn
     juju expose gunicorn
 
 
 Example: Deploying using code repository
 ----------------------------------------
 
-1. Setup your Django specific parameters in my_django_site.yaml like this one::
+1. Setup your Django specific parameters in mydjangosite.yaml like this one::
 
-    my_django_site:
+    mydjangosite:
         vcs: bzr
         repos_url: lp:~patrick-hetu/my_site
 
 Note: 
 
     If your using juju-core you must remove the first line
-    of the file and indent the rest according to that.
+    of the file and the indentation for the rest of the file.
 
 2. Deployment with `Gunicorn`::
 
     juju bootstrap
-    juju deploy --config my_django_site.yaml python-django
+    juju deploy --config mydjangosite.yaml python-django
 
     juju deploy postgresql
     juju add-relation python-django postgresql:db
@@ -143,17 +145,32 @@ This charm allow you to upgrade your deployment using the Juju's
 `upgrade-charm` command. This command will:
 
 * upgrade Django
-* upgrade using your requirements files
 * upgrade additionnal pip packages
 * upgrade additionnal Debian packages
+* upgrade using requirements files in your project
 
-Management with Fabfile
------------------------
+Management with Fabric
+----------------------
 
-To make Juju more PAAS'ish the charm include a Fabric script that use Juju's
-output to populate env.roledefs with Services and Units.
+Fabric_ is a Python (2.5 or higher) library and command-line tool for
+streamlining the use of SSH for application deployment or systems
+administration tasks.
 
-So, with a python-django service deployed you can run commands on all units::
+It provides a basic suite of operations for executing
+local or remote shell commands (normally or via sudo) and uploading/downloading
+files, as well as auxiliary functionality such as prompting the running user
+for input, or aborting execution.
+
+.. _Fabric: http://docs.fabfile.org
+
+This charm includes a Fabric script that use Juju's information to perform various
+tasks.
+
+For a list of tasks type this command after bootstraping your Juju environment::
+
+  fab -l
+
+For example, with a python-django service deployed you can run commands on all its units::
 
     fab -R python-django pull
     [10.0.0.2] Executing task 'pull'
@@ -162,7 +179,7 @@ So, with a python-django service deployed you can run commands on all units::
     [10.0.0.2] run: invoke-rc.d gunicorn restart
     ...
 
-Or you can also specify a single unit:
+Or you can also run commands on a single unit:
 
     fab -R python-django/0 pull
     [10.0.0.2] Executing task 'pull'
@@ -172,28 +189,14 @@ Or you can also specify a single unit:
     ...
 
 
-fabfile.py include the following commands:
-
-* apt_install
-* apt_update
-* apt_dist_upgrade
-* apt_install_r
-* pip_install
-* pip_install_r
-* adduser
-* ssh_add_key
-* pull
-* reload
-* manage
-* migrate
-* syncdb
-* collectstatic
-* delete_pyc
-
-
 Limitation:
 
-* You can only execute task for one role (service) at the time.
+* You can only execute task for one role at the time.
+  But it can be a service or unit.
+
+If you want to extend the fabfile check out fabtools_ .
+
+.. _fabtools: http://fabtools.readthedocs.org/
 
 Security
 --------
@@ -205,9 +208,9 @@ verification of its downloads.
 Writing application charm
 -------------------------
 
-To create an application subordinate charm that works with this one you need
-at least to have an interface named `directory-path` in your `metadate.yaml` file
-for example::
+To create an application subordinate charm that can be related to this charm you need
+at least to define an interface named `directory-path` in your `metadate.yaml` file
+like this::
 
   [...]
   requires:
@@ -216,15 +219,17 @@ for example::
        scope: container
        optional: true
 
-With those hooks you will be able to get those relation variables:
+When you will add a relation between your charm and the python-django charm
+the hook you will be able to get those relation variables:
 
 * settings_dir_path
 * urls_dir_path
 * django_admin_cmd
 * install_root
 
-then be informed where to add new settings and urls files and how to run additionnal Django
-commands. When the hook will be finish, the Django charm will reload Gunicorn to catch the changes.
+now your charm will be informed about where it need to add new settings
+and urls files and how to run additionnal Django commands. 
+The Django charm reload Gunicorn after the relation to catch the changes.
 
 Changelog
 ---------

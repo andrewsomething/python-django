@@ -2,7 +2,6 @@
 
 import os
 import sys
-from datetime import datetime
 from subprocess import Popen, PIPE
 
 import yaml
@@ -54,18 +53,30 @@ def _find_django_admin_cmd():
 # Debian
 @task()
 def apt_install(packages):
+    """
+    Install one or more packages.
+    """
     sudo('apt-get install -y %s' % packages)
 
 @task
 def apt_update():
+    """
+    Update APT package definitions.
+    """
     sudo('apt-get update')
 
 @task
 def apt_dist_upgrade():
+    """
+    Upgrade all packages.
+    """
     sudo('apt-get dist-upgrade -y')
 
 @task
 def apt_install_r():
+    """
+    Install one or more packages listed in your requirements_apt_files.
+    """
     conf = _config_get(env.roles[0])
     project_dir = os.path.join(conf['install_root'], env.roles[0])
     with cd(project_dir):
@@ -75,10 +86,16 @@ def apt_install_r():
 # Python
 @task
 def pip_install(packages):
+    """
+    Install one or more packages.
+    """
     sudo("pip install %s" % packages)
 
 @task
 def pip_install_r():
+    """
+    Install one or more python packages listed in your requirements_pip_files.
+    """
     conf = _config_get(env.roles[0])
     project_dir = os.path.join(conf['install_root'], env.roles[0])
     with cd(project_dir):
@@ -88,10 +105,16 @@ def pip_install_r():
 # Users
 @task
 def adduser(username):
+    """
+    Adduser without password.
+    """
     sudo('adduser %s --disabled-password --gecos ""' % username)
 
 @task
 def ssh_add_key(pub_key_file, username=None):
+    """
+    Add a public SSH key to the authorized_keys file on the remote machine.
+    """
     with open(os.path.normpath(pub_key_file), 'rt') as f:
         ssh_key = f.read()
 
@@ -108,6 +131,9 @@ def ssh_add_key(pub_key_file, username=None):
 
 @task
 def pull():
+    """
+    pull or update your project code on the remote machine.
+    """
     conf = _config_get(env.roles[0])
     project_dir = os.path.join(conf['install_root'], env.roles[0])
     with cd(project_dir):
@@ -121,36 +147,28 @@ def pull():
             run('svn up %s' % conf['repos_url'])
 
         delete_pyc()
-    reload()
+    gunicorn_reload()
 
 
 # Gunicorn
 @task
-def reload():
+def gunicorn_reload():
+    """
+    Reload gunicorn.
+    """
     sudo('invoke-rc.d gunicorn reload')
 
 
 # Django
 @task
 def manage(command):
+    """ Runs management commands."""
     conf = _config_get(env.roles[0])
     project_dir = os.path.join(conf['install_root'], env.roles[0])
     django_admin_cmd = _find_django_admin_cmd()
     run('%s %s --pythonpath=%s --settings=%s' % \
       (django_admin_cmd, command, conf['install_root'], env.roles[0] + 'settings'))
 
-@task
-def migrate(params=''):
-    manage('migrate --noinput %s' % params)
-
-@task
-def syncdb(params=''):
-    """ Runs syncdb management command. """
-    manage('syncdb --noinput %s' % params)
-
-@task
-def collectstatic(params=''):
-    manage('collectstatic --noinput %s' % params)
 
 # Utils
 @task
