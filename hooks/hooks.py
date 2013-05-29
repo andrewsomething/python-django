@@ -519,8 +519,15 @@ def install():
        for req_file in requirements_pip_files.split(','):
             pip_install_req(os.path.join(working_dir,req_file))
 
+    wsgi_py_path = os.path.join(working_dir, 'wsgi.py')
+    if not os.path.exists(wsgi_py_path):
+        process_template('wsgi.py.tmpl', {'project_name': sanitized_unit_name, \
+                                          'django_settings': django_settings}, \
+                                          wsgi_py_path)
+
+
 def config_changed(config_data):
-    os.environ['DJANGO_SETTINGS_MODULE'] = '.'.join([sanitized_unit_name, 'settings'])
+    os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
     django_admin_cmd = find_django_admin_cmd()
 
     site_secret_key = config_data['site_secret_key']
@@ -566,6 +573,7 @@ def upgrade():
        for req_file in requirements_pip_files.split(','):
             pip_install_req(os.path.join(working_dir,req_file), upgrade=True)
 
+
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
@@ -582,7 +590,11 @@ def django_settings_relation_joined_changed():
                   'urls_dir_path': urls_dir_path,
                   'install_root': install_root,
                   'django_admin_cmd': django_admin_cmd,
+                  'wsgi_user': wsgi_user,
+                  'wsgi_group': wsgi_group,
                  })
+
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
 
     # Trigger WSGI reloading
     for relid in relation_ids('wsgi'):
@@ -612,10 +624,22 @@ def pgsql_relation_joined_changed():
 
     process_template('engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'pgsql'})
 
-    run("%s syncdb --noinput --pythonpath=%s --settings=%s.settings || true" % (django_admin_cmd, install_root, sanitized_unit_name))
+    run("%s syncdb --noinput --pythonpath=%s --settings=%s || true" % \
+            (django_admin_cmd, install_root, django_settings_modules))
+
+
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def pgsql_relation_broken():
-    pass
+    run('rm %s' % settings_database_path % {'engine_name': 'pgsql'})
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def mongodb_relation_joined_changed():
     packages = ["python-mongoengine"]
@@ -632,14 +656,24 @@ def mongodb_relation_joined_changed():
 
     process_template('mongodb_engine.tmpl', templ_vars, settings_database_path % {'engine_name': 'mongodb'})
 
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
+
 def mongodb_relation_broken():
-    pass
+    run('rm %s' % settings_database_path % {'engine_name': 'mongodb'})
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def wsgi_relation_joined_changed():
     relation_set({'working_dir':working_dir})
 
     for var in config_data:
-        if var.startswith('wsgi_') or var in ['env_extra', 'django_settings', 'port']:
+        if var.startswith('wsgi_') or var in ['listen_ip', 'port']:
             relation_set({var: config_data[var]})
     
     if not config_data['python_path']:
@@ -647,6 +681,38 @@ def wsgi_relation_joined_changed():
 
 def wsgi_relation_broken():
     pass
+
+def cache_relation_joined_changed():
+    os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
+
+    packages = ["python-memcache"]
+    apt_get_install(packages)
+
+    host = relation_get("host")
+    if not host:
+        return
+
+    templ_vars = {
+       'cache_engine': 'django.core.cache.backends.memcached.MemcachedCache',
+       'cache_host': relation_get("host"),
+       'cache_port': relation_get("port"),
+    }
+
+    process_template('cache.tmpl', templ_vars, settings_database_path % {'engine_name': 'memcache'})
+
+    run('chown -R %s:%s %s' % (wsgi_user,wsgi_group, working_dir))
+
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
+
+def cache_relation_broken():
+    run('rm %s' % settings_database_path % {'engine_name': 'memcache'})
+
+    # Trigger WSGI reloading
+    for relid in relation_ids('wsgi'):
+        relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def website_relation_joined_changed():
     gunicorn_file = "/etc/gunicorn.d/%s.conf" % sanitized_unit_name
@@ -681,6 +747,7 @@ wsgi_user = config_data['wsgi_user']
 wsgi_group = config_data['wsgi_group']
 install_root = config_data['install_root']
 application_path = config_data['application_path']
+django_settings = config_data['django_settings']
 
 unit_name = os.environ['JUJU_UNIT_NAME'].split('/')[0]
 sanitized_unit_name = sanitize(unit_name)
@@ -690,6 +757,7 @@ if application_path:
 else:
     working_dir = vcs_clone_dir
 
+django_settings_modules = '.'.join([sanitized_unit_name, django_settings])
 django_run_dir = os.path.join(working_dir, "run/")
 django_logs_dir = os.path.join(working_dir, "logs/")
 settings_py_path = os.path.join(working_dir, 'settings.py')
@@ -744,6 +812,12 @@ def main():
 
     elif hook_name == "wsgi-relation-broken":
         wsgi_relation_broken()
+
+    elif hook_name in ["cache-relation-joined", "cache-relation-changed"]:
+        cache_relation_joined_changed()
+
+    elif hook_name == "cache-relation-broken":
+        cache_relation_broken()
 
     elif hook_name in ["website-relation-joined", "website-relation-changed"]:
         website_relation_joined_changed()

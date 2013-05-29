@@ -179,14 +179,11 @@ For example, with a python-django service deployed you can run commands on all i
     [10.0.0.2] run: invoke-rc.d gunicorn restart
     ...
 
-Or you can also run commands on a single unit:
+Or you can also run commands on a single unit::
 
-    fab -R python-django/0 pull
-    [10.0.0.2] Executing task 'pull'
-    [10.0.0.2] run: bzr pull lp:~my_name/django_code/my_site
+    fab -R python-django/0 manage:createsuperuser
     ...
-    [10.0.0.2] run: invoke-rc.d gunicorn restart
-    ...
+    [10.0.0.2] out: Username (leave blank to use 'ubuntu'):
 
 
 Limitation:
@@ -298,3 +295,4 @@ Inspiration
 * http://www.rdegges.com/the-perfect-django-settings-file/
 * https://github.com/xenith/django-base-template.git
 * https://github.com/transifex/transifex/blob/devel/transifex/settings.py
+* http://peterlyons.com/problog/2010/02/environment-variables-considered-harmful

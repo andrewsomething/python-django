@@ -102,7 +102,7 @@ options:
         default: ""
         description: |
           The Python path to a Django settings module.
-          Leave it empty for project root.
+          Leave it empty for settings.
     urls_dir_name:
         type: string
         default: "juju_urls"
@@ -129,16 +129,16 @@ options:
           Set the variable to an empty string if you don't want the feature.
     wsgi_wsgi_file:
         type: string
-        default: ""
-        description: "The name of the WSGI application. Leave it empty for {{project_name}}.wsgi"
+        default: "wsgi"
+        description: "The name of the WSGI application."
     wsgi_workers:
         type: int
         default: 0
-        description: "The number of worker process for handling requests. 0 for cpu + 1"
+        description: "The number of worker process for handling requests. 0 for count(cpu) + 1"
     wsgi_worker_class:
         type: string
         default: "sync"
-        description: "Gunicorn workers type."
+        description: "Gunicorn workers type. Can be: sync, eventlet, gevent, tornado"
     wsgi_worker_connections:
         type: int
         default: 1000
@@ -154,11 +154,11 @@ options:
     wsgi_timeout:
         type: int
         default: 30
-        description: ""
+        description: "Timeout of a request in seconds."
     wsgi_keep_alive:
         type: int
         default: 2
-        description: ""
+        description: "Keep alive time in seconds."
     wsgi_umask:
         type: string
         default: "0"
@@ -173,8 +173,8 @@ options:
         description: "Switch worker process to run as this group. A valid group id (as an int) or the name."
     wsgi_log_file:
         type: string
-        default: ""
-        description: "The log file to write to. If empty the file would be <your_application_dir>/gunicorn.log"
+        default: "-"
+        description: "The log file to write to. If empty the logs would be handle by upstart."
     wsgi_log_level:
         type: string
         default: "info"
@@ -185,21 +185,25 @@ options:
         description: "The Access log file to write to."
     wsgi_access_logformat:
         type: string
-        default: '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
-        description: "The Access log format ."
+        default: ""
+        description: "The Access log format. Don't forget to escape all quotes and round brackets."
     wsgi_extra:
         type: string
         default: ""
-        description: "Extra settings. For example: {--debug},"
+        description: "Space separated extra settings. For example: --debug"
     wsgi_timestamp:
         type: string
         default: ""
-        description: "The variable to modify to trigger Gunicorn reload"
+        description: "The variable to modify to trigger Gunicorn reload."
     python_path:
         type: string
         default: ""
-        description: "Set PYTHONPATH environment variable"
+        description: "Set an additionnal PYTHONPATH to the project."
+    listen_ip:
+        type: string
+        default: "0.0.0.0"
+        description: "IP adresses that Gunicorn will listen on. By default we listen on all of them."
     port:
         type: int
         default: 8080
-        description: "Default listen port"
+        description: "Port the application will be listenning."
