@@ -99,10 +99,9 @@ options:
           Set the variable to an empty string if you don't want the feature.
     django_settings:
         type: string
-        default: ""
+        default: "settings"
         description: |
-          The Python path to a Django settings module.
-          Leave it empty for settings.
+          The Python path to your Django settings module.
     urls_dir_name:
         type: string
         default: "juju_urls"
