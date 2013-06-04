@@ -717,11 +717,7 @@ def cache_relation_broken():
         relation_set({'wsgi_timestamp': time.time()}, relation_id=relid)
 
 def website_relation_joined_changed():
-    gunicorn_file = "/etc/gunicorn.d/%s.conf" % sanitized_unit_name
-    if os.path.exists(gunicorn_file):
-        bind_line = run('grep "bind=0.0.0.0:" %s' % gunicorn_file)
-        port = run('echo %s | grep -o ":[0-9]*" | sed -e "s/://"' % bind_line)
-        relation_set({'port': port, 'hostname': get_unit_host()})
+    relation_set({'port': config_data["port"], 'hostname': get_unit_host()})
 
 def website_relation_broken():
     pass
