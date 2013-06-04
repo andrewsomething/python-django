@@ -1,6 +1,7 @@
 name: python-django
 summary: High-level Python web development framework
 maintainer: Patrick Hetu <patrick.hetu@gmail.com>
+categories: ['databases', 'app-servers']
 description: |
   This charm will install Django. It can also install your Django
   project and his dependencies from either a template or from a
