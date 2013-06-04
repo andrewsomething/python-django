@@ -230,7 +230,8 @@ def apt_get_install(packages=None):
 # pip_install( package ):  Installs a python package
 #------------------------------------------------------------------------------
 def pip_install(packages=None, upgrade=False):
-    cmd_line = ['pip', 'install']
+    # Build in /tmp or Juju's internal git will be confused
+    cmd_line = ['pip', 'install', '-b', '/tmp/']
     if packages is None:
         return(False)
     if upgrade:
@@ -246,7 +247,8 @@ def pip_install(packages=None, upgrade=False):
 # pip_install_req( path ):  Installs a requirements file
 #------------------------------------------------------------------------------
 def pip_install_req(path=None, upgrade=False):
-    cmd_line = ['pip', 'install']
+    # Build in /tmp or Juju's internal git will be confused
+    cmd_line = ['pip', 'install', '-b', '/tmp/']
     if path is None:
         return(False)
     if upgrade:
