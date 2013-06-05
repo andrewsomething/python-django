@@ -23,7 +23,8 @@ Notable features include:
 * Form serialization and validation system
 * Templating system
 * Lightweight, standalone web server for development and testing
-* Internationalization support * Testing framework and client
+* Internationalization support
+* Testing framework and client
 
 The charm
 ---------
@@ -50,7 +51,7 @@ Simply::
 
     juju deploy gunicorn
     juju add-relation python-django gunicorn
-    juju expose gunicorn
+    juju expose python-django
 
 In a couple of minute, your new (vanilla) Django site should be ready at
 the public address of gunicorn. You can find it in the output of the
@@ -85,7 +86,7 @@ Note:
 
     juju deploy gunicorn
     juju add-relation mydjangosite gunicorn
-    juju expose gunicorn
+    juju expose mydjangosite
 
 
 Example: Deploying using code repository
@@ -112,7 +113,7 @@ Note:
 
     juju deploy gunicorn
     juju add-relation python-django gunicorn
-    juju expose gunicorn
+    juju expose python-django
 
 Note:
 
@@ -242,6 +243,7 @@ Changelog
       and a juju_urls directories by default
     * New MongoDB relation (server side is yet to be done)
     * New upgrade hook that upgrade pip and debian packages
+    * Expose ports is now handle by the charm
 
   Configuration changes:
 
