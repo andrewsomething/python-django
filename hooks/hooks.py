@@ -528,10 +528,10 @@ def install():
                                           wsgi_py_path)
 
 def start():
-    run("service %s restart || service %s start" % (sanitized_unit_name, sanitized_unit_name))
+    run("service %s restart || service %s start || true" % (sanitized_unit_name, sanitized_unit_name))
 
 def stop():
-    run('service %s stop' % sanitized_unit_name)
+    run('service %s stop || true' % sanitized_unit_name)
 
 def config_changed(config_data):
     os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
