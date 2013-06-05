@@ -527,6 +527,11 @@ def install():
                                           'django_settings': django_settings}, \
                                           wsgi_py_path)
 
+def start():
+    run("service %s restart || service %s start" % (sanitized_unit_name, sanitized_unit_name))
+
+def stop():
+    run('service %s stop' % sanitized_unit_name)
 
 def config_changed(config_data):
     os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
@@ -681,8 +686,10 @@ def wsgi_relation_joined_changed():
     if not config_data['python_path']:
         relation_set({'python_path': install_root})
 
+    open_port(config_data['port'])
+
 def wsgi_relation_broken():
-    pass
+    close_port(config_data['port'])
 
 def cache_relation_joined_changed():
     os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
@@ -773,6 +780,12 @@ def main():
     juju_log(MSG_INFO, "Running {} hook".format(hook_name))
     if hook_name == "install":
         install()
+
+    elif hook_name == "start":
+       start()
+
+    elif hook_name == "stop":
+       stop()
 
     elif hook_name == "config-changed":
        config_changed(config_data)
