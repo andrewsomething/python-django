@@ -236,10 +236,15 @@ def pip_install(packages=None, upgrade=False):
         return(False)
     if upgrade:
         cmd_line.append('--upgrade')
-    if packages.startswith('svn+') or packages.startswith('git+') or \
-       packages.startswith('hg+') or packages.startswith('bzr+'):
-        cmd_line.append('-e')
-    cmd_line.append(packages)
+    if not isinstance(packages, list):
+        packages = [packages]
+
+    for package in packages:
+        if package.startswith('svn+') or package.startswith('git+') or \
+           package.startswith('hg+') or package.startswith('bzr+'):
+            cmd_line.append('-e')
+        cmd_line.append(package)
+
     cmd_line.append('--use-mirrors')
     return(subprocess.call(cmd_line))
 
@@ -528,10 +533,12 @@ def install():
                                           wsgi_py_path)
 
 def start():
-    run("service %s restart || service %s start || true" % (sanitized_unit_name, sanitized_unit_name))
+    if os.path.exists(os.path.join('/etc/init/', sanitized_unit_name + '.conf')):
+        run("service %s restart || service %s start" % (sanitized_unit_name, sanitized_unit_name))
 
 def stop():
-    run('service %s stop || true' % sanitized_unit_name)
+    if os.path.exists(os.path.join('/etc/init/', sanitized_unit_name + '.conf')):
+        run('service %s stop' % sanitized_unit_name)
 
 def config_changed(config_data):
     os.environ['DJANGO_SETTINGS_MODULE'] = django_settings_modules
