@@ -1,7 +1,7 @@
 Juju charm python-django
 ========================
 
-:Author: Patrick Hetu <patrick@koumbit.org> and Bruno Girin
+:Author: Patrick Hetu <patrick.hetu@gmail.com> and Bruno Girin
 
 What is Django?
 ...............
