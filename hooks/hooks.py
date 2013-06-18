@@ -11,7 +11,8 @@ from pwd import getpwnam
 from grp import getgrnam
 from random import choice
 
-CHARM_PACKAGES = ["python-pip", "python-jinja2", "mercurial", "git-core", "subversion", "bzr"]
+CHARM_PACKAGES = ["python-pip", "python-jinja2", "mercurial", "git-core",
+                  "subversion", "bzr", "gettext"]
 
 INJECTED_WARNING = """
 #------------------------------------------------------------------------------
