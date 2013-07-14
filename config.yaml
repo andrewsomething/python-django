@@ -1,102 +1,143 @@
 options:
+    site_secret_key:
+        type: string
+        default: ''
+        description: |
+          The web site secret key. Leave empty will generate one.
+          NOTE: You **NEED** to set this in a multi-units architecture or you will
+          have some trouble.
+    django_version:
+        type: string
+        default: "distro"
+        description: |
+          Version or origin from which to install.  May be one of the following:
+          distro (default), ppa:somecustom/ppa, a deb url sources entry or
+          a valid pip line like 'Django' or 'Django==1.5' or a reposiroty url (without the -e).
     vcs:
         type: string
-        default: "git"
+        default: ""
         description: |
           The vcs software to use. Only hg, git, bzr, and svn are currently supported.
     repos_url:
         type: string
         default: ""
         description: The vcs url to checkout.
+    repos_username:
+        type: string
+        default: ""
+        description: |
+            The vcs user name.
+            Note: *Subversion only* settings. For other vcs use the repos_url for auth.
+    repos_password:
+        type: string
+        default: ""
+        description: |
+            The vcs password.
+            Note: *Subversion only* settings. For other vcs use the repos_url for auth.
     repos_branch:
         type: string
         default: ""
         description: |
           The repo branch to pull out from. If empty, it will pull out the
           default branch or trunk (such as origin/master with git).
-          Note that this setting is ignored for bzr and svn as the branch is
-          specified in the URL for both of them.
-    repos_username:
+          Note that this setting only applies to git. This option is not
+          supported for hg. For svn and bzr, specify the branch name as
+          part of the URL.
+    project_template_url:
         type: string
         default: ""
-        description: The vcs user name.
-    repos_password:
+        description: |
+          If not repository url is found, the charm will create a new project. This
+          option is the --template argument value for the startproject command
+          to use a custom project template.
+          
+          Django will also accept URLs (http, https, ftp) to compressed
+          archives with the app template files, downloading and extracting them on the fly.
+          For more informations see:
+            https://docs.djangoproject.com/en/dev/ref/django-admin/#startproject-projectname-destination
+    project_template_extension:
         type: string
         default: ""
-        description: The vcs password.
+        description: |
+          When Django copies the project template files, it also renders certain
+          files through the template engine: the files whose extensions match the
+          --extension option (py by default) and the files whose names are passed with
+          the --name option.
+    install_root:
+        type: string
+        default: "/srv/"
+        description: The root directory to checkout to.
     application_path:
         type: string
         default: ""
         description: |
-          The relative path to the root of the Django application tree where the manage.py
+          The relative path to install_root where the manage.py
           script is located.
-    extra_deb_pkgs:
+    additional_distro_packages:
+        type: string
+        default: "python-imaging,python-docutils,python-tz"
+        description: |
+          Comma separated extra packages to install.
+    additional_pip_packages:
         type: string
         default: ""
-        description: Extra Debian packages to install
-    requirements:
-        type: string
-        default: "./requirements.txt"
         description: |
-          The relative path to the requirement file. Note that the charm
+          Comma separated extra packages to install.
+    requirements_pip_files:
+        type: string
+        default: "requirements.txt,requirements.pip"
+        description: |
+          Comma separated relative paths to requirement files. Note that the charm
           won't manually upgrade packages defined in this file.
-    site_domain:
+          Set the variable to an empty string if you don't want the feature.
+    requirements_apt_files:
         type: string
-        default: "example.com"
-        description: The domain name of the web site. This variable can't be changed after installation.
-    site_username:
-        type: string
-        default: "admin"
-        description: The web site administrator username. This variable can't be changed after installation.
-    site_password:
-        type: string
-        default: "changeme"
-        description: The web site administrator password. This variable can't be changed after installation.
-    site_admin_email:
-        type: string
-        default: ""
-        description: The web site administrator email. This variable can't be changed after installation.
-    site_secret_key:
-        type: string
-        default: ''
+        default: "requirements.apt"
         description: |
-          The web site secret key. Leave empty will generate one (Note: you don't
-          want that in a multi-unit architechture).
-    swift_auth_url:
+          Comma separated relative paths to requirement files. Note that the charm
+          won't manually upgrade packages defined in this file.
+          Set the variable to an empty string if you don't want the feature.
+    django_settings:
         type: string
-        default: ""
-        description: Swift authentification url
-    swift_api_key:
+        default: "settings"
+        description: |
+          The Python path to your Django settings module.
+    urls_dir_name:
         type: string
-        default: ""
-        description: Swift authentification key
-    swift_version:
+        default: "juju_urls"
+        description: |
+          The place where the generated urls will be written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_dir_name:
         type: string
-        default: 'v1'
-        description: Swift version 
-    swift_prefix:
+        default: "juju_settings"
+        description: |
+          The place where the generated settings will be written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_database_path:
         type: string
-        default: 'AUTH_'
-        description: Swift username prefix 
-    swift_username:
+        default: "juju_settings/20-engine-%(engine_name)s.py"
+        description: |
+          The place where the database configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
+    settings_secret_key_path:
         type: string
-        default: ''
-        description: Swift username
-    swift_container_name:
-        type: string
-        default: ''
-        description: Swift container name
+        default: "juju_settings/10-secret.py"
+        description: |
+          The place where the secret key configuration will be appended or written.
+          Set the variable to an empty string if you don't want the feature.
     wsgi_wsgi_file:
         type: string
+        default: "wsgi"
         description: "The name of the WSGI application."
     wsgi_workers:
         type: int
-        default: 2
-        description: "The number of worker process for handling requests."
+        default: 0
+        description: "The number of worker process for handling requests. 0 for count(cpu) + 1"
     wsgi_worker_class:
         type: string
         default: "sync"
-        description: "Gunicorn workers type."
+        description: "Gunicorn workers type. Can be: sync, eventlet, gevent, tornado"
     wsgi_worker_connections:
         type: int
         default: 1000
@@ -112,11 +153,11 @@ options:
     wsgi_timeout:
         type: int
         default: 30
-        description: ""
+        description: "Timeout of a request in seconds."
     wsgi_keep_alive:
         type: int
         default: 2
-        description: ""
+        description: "Keep alive time in seconds."
     wsgi_umask:
         type: string
         default: "0"
@@ -132,36 +173,36 @@ options:
     wsgi_log_file:
         type: string
         default: "-"
-        description: "The log file to write to. If empty the file would be <your_application_dir>/gunicorn.log"
+        description: "The log file to write to. If empty the logs would be handle by upstart."
     wsgi_log_level:
         type: string
         default: "info"
         description: "The granularity of Error log outputs."
     wsgi_access_logfile:
         type: string
-        default: "-"
+        default: ""
         description: "The Access log file to write to."
     wsgi_access_logformat:
         type: string
-        default: '%(h)s %(l)s %(u)s %(t)s "%(r)s" %(s)s %(b)s "%(f)s" "%(a)s"'
-        description: "The Access log format ."
+        default: ""
+        description: "The Access log format. Don't forget to escape all quotes and round brackets."
     wsgi_extra:
         type: string
         default: ""
-        description: "Extra settings. For example: {--debug},"
+        description: "Space separated extra settings. For example: --debug"
     wsgi_timestamp:
         type: string
         default: ""
-        description: "The variable to modify to trigger Gunicorn reload"
-    django_settings:
-        type: string
-        default: ""
-        description: "The Python path to a Django settings module."
+        description: "The variable to modify to trigger Gunicorn reload."
     python_path:
         type: string
         default: ""
-        description: "Set PYTHONPATH environment variable"
+        description: "Set an additionnal PYTHONPATH to the project."
+    listen_ip:
+        type: string
+        default: "0.0.0.0"
+        description: "IP adresses that Gunicorn will listen on. By default we listen on all of them."
     port:
         type: int
         default: 8080
-        description: "Default listen port"
+        description: "Port the application will be listenning."

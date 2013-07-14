@@ -1,0 +1,51 @@
+#!/usr/bin/python
+# Copyright 2012 Canonical Ltd.  This software is licensed under the
+# GNU Affero General Public License version 3 (see the file LICENSE).
+
+from helpers import (
+    command,
+    make_charm_config_file,
+    unit_info,
+    wait_for_page_contents,
+    )
+import unittest
+
+juju = command('juju')
+
+
+class TestCharm(unittest.TestCase):
+
+    def tearDown(self):
+        juju('destroy-service', 'postgresql')
+        juju('destroy-service', 'python-django')
+        juju('destroy-service', 'gunicorn')
+
+    def deploy(self, charm_config=None):
+        if charm_config is not None:
+            charm_config_file = make_charm_config_file(charm_config)
+        juju('deploy', 'postgresql')
+        juju('deploy', '--config=' + charm_config_file.name, 'python-django')
+        juju('deploy', 'gunicorn')
+        juju('add-relation', 'python-django:db', 'postgresql:db')
+        juju('add-relation', 'python-django', 'gunicorn')
+
+
+    def expose_and_check_page(self):
+        juju('expose', 'python-django')
+        addr = unit_info('python-django', 'public-address')
+        url = 'http://{}:8080/admin/'.format(addr)
+        wait_for_page_contents(url, 'Administration de Django', timeout=1000)
+
+    def get_config(self):
+        return {
+            'site_secret_key': 'abcdefghijklmmnopqrstuvwxyz'
+        }
+
+    def test_port_opened(self):
+        # Deploying a buildbot master should result in it opening a port and
+        # serving its status via HTTP.
+        self.deploy(self.get_config())
+        self.expose_and_check_page()
+
+if __name__ == '__main__':
+    unittest.main()
