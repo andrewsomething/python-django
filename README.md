@@ -64,33 +64,33 @@ tutorial.
 
 1. Setup your Django specific parameters in mydjangosite.yaml like this one::
 
-    mydjangosite:
-         project_template_url: https://github.com/xenith/django-base-template/zipball/master
-         project_template_extension: py,md,rst
+        mydjangosite:
+            project_template_url: https://github.com/xenith/django-base-template/zipball/master
+            project_template_extension: py,md,rst
 
 Note: If your using juju-core you must remove the first line
 of the file and the indentation for the rest of the file.
 
 1. Deployment with `Gunicorn`::
 
-    juju bootstrap
-    juju deploy --config mydjangosite.yaml mydjangosite
+        juju bootstrap
+        juju deploy --config mydjangosite.yaml mydjangosite
 
-    juju deploy postgresql
-    juju add-relation mydjangosite postgresql:db
+        juju deploy postgresql
+        juju add-relation mydjangosite postgresql:db
 
-    juju deploy gunicorn
-    juju add-relation mydjangosite gunicorn
-    juju expose mydjangosite
+        juju deploy gunicorn
+        juju add-relation mydjangosite gunicorn
+        juju expose mydjangosite
 
 
 ### Example: Deploying using code repository
 
 1. Setup your Django specific parameters in mydjangosite.yaml like this one::
 
-    mydjangosite:
-        vcs: bzr
-        repos_url: lp:~patrick-hetu/my_site
+        mydjangosite:
+            vcs: bzr        
+            repos_url: lp:~patrick-hetu/my_site
 
 Note: 
 
